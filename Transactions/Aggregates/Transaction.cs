@@ -1,6 +1,9 @@
-﻿namespace Transactions.Aggregates;
+﻿using Transactions.Aggregates.Common;
 
-public class Transaction
+namespace Transactions.Aggregates;
+
+public class Transaction : IAggregate<Transaction>
 {
-    
+    public bool IsDeleted { get; set; }
+    public Transaction Id { get; set; }
 }
