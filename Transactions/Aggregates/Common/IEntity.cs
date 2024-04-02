@@ -2,12 +2,12 @@
 
 public interface IEntity<T> : IEntity
 {
-    public T Id { get; set; }
+    public T Id { get; }
 }
 
 public interface IEntity
 {
-    public bool IsDeleted { get; set; }
+    public bool IsDeleted { get; }
 }
 
 // Aggregates Interfaces

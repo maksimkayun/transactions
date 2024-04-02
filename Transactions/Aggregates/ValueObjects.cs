@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using Transactions.Aggregates.Common;
 
 namespace Transactions.Aggregates;
@@ -23,20 +23,11 @@ public class TransactionStatus : Enumeration
     {
         Description = description;
     }
-
-
-    public IEnumerator GetEnumerator()
-    {
-        yield return Created;
-        yield return Processing;
-        yield return Completed;
-        yield return Cancelled;
-    }
 }
 
 public class AccountNumber(string id, string number, decimal amount) : ValueObject<AccountNumber>
 {
-    private decimal _amount = amount > 0 ? amount : throw new Exception("Сумма для списания/начисления должна быть больше 0!");
+    private decimal _amount = amount >= 0 ? amount : throw new Exception("Сумма для начисления должна быть больше 0!");
     public string Number { get; private set; } = number;
     public string Id { get; private set; } = id;
 

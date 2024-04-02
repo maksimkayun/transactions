@@ -1,4 +1,4 @@
-using Transactions.Aggregates.Common;
+﻿using Transactions.Aggregates.Common;
 
 namespace Transactions.Aggregates;
 
@@ -6,6 +6,7 @@ public class Transaction : IAggregate<Transaction>
 {
     public bool IsDeleted { get; private set; }
     public Transaction Id { get; private set; }
+    public string TransactionId { get; }
     public TransactionStatus Status { get; private set; }
     
     public AccountNumber RecipientAccountNumber { get; private set; }
@@ -14,9 +15,10 @@ public class Transaction : IAggregate<Transaction>
     public decimal Amount { get; private set; }
     private TransactionResult Result;
     
-    public Transaction(AccountNumber recipientAccountNumber, AccountNumber senderAccountNumber, decimal amount)
+    public Transaction(AccountNumber recipientAccountNumber, AccountNumber senderAccountNumber, decimal amount, string? transactionId = null)
     {
         Id = this;
+        TransactionId = transactionId ?? Guid.NewGuid().ToString();
         Status = TransactionStatus.Created;
 
         if (recipientAccountNumber.Equals(senderAccountNumber))
@@ -31,27 +33,31 @@ public class Transaction : IAggregate<Transaction>
 
     public async Task<TransactionStatus> MakeTransaction(CancellationToken cancellationToken)
     {
-        if (cancellationToken.CanBeCanceled)
-        {
-            CancelTransaction(null);
-            Result = new TransactionResult(SenderAccountNumber.Decrease(Amount),
-                RecipientAccountNumber.Increase(Amount), Status);
-            return Status;
-        }
+        // if (cancellationToken.CanBeCanceled)
+        // {
+        //     CancelTransaction(null);
+        //     Result = new TransactionResult(SenderAccountNumber.Decrease(Amount),
+        //         RecipientAccountNumber.Increase(Amount), Status);
+        //     return Status;
+        // }
         
         if (Equals(Status, TransactionStatus.Created))
         {
             try
             {
-                Result = new TransactionResult(SenderAccountNumber.Decrease(Amount),
-                    RecipientAccountNumber.Increase(Amount), Status);
+                var senderRemains = SenderAccountNumber.Decrease(Amount);
+                var recipientRemains = RecipientAccountNumber.Increase(Amount);
+                Result = new TransactionResult(senderRemains, recipientRemains, Status);
                 
                 Result.UpdateStatus(RollingStatus());
                 Thread.Sleep(new Random().Next(1000, 2000));
             }
             catch (Exception e)
             {
-                Result.UpdateStatus(CancelTransaction(e.Message));
+                var senderRemains = SenderAccountNumber.GetAmount();
+                var recipientRemains = RecipientAccountNumber.GetAmount();
+                Result = new TransactionResult(senderRemains, recipientRemains, Status);
+                Result.UpdateStatus(CancelTransaction(null));
             }
         }
 
