@@ -46,24 +46,3 @@ public class TransactionProcessor : IJob
         }
     }
 }
-
-public class TransactionScheduler
-{
-    public static async Task Start()
-    {
-        IScheduler scheduler = await StdSchedulerFactory.GetDefaultScheduler();
-        await scheduler.Start();
- 
-        IJobDetail job = JobBuilder.Create<TransactionProcessor>().Build();
- 
-        ITrigger trigger = TriggerBuilder.Create()  
-            .WithIdentity("trigger1", "group1")     
-            .StartNow()                           
-            .WithSimpleSchedule(x => x         
-                .WithIntervalInSeconds(2)    
-                .RepeatForever())                   
-            .Build();                              
- 
-        await scheduler.ScheduleJob(job, trigger);        
-    }
-}
