@@ -1,8 +1,9 @@
 ﻿using DataAccess;
+using Domain.Aggregates;
+using Domain.Mapping;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
 using Quartz.Impl;
-using Transactions.Mapping;
 
 namespace Transactions.Jobs;
 
@@ -30,7 +31,7 @@ public class TransactionProcessor : IJob
         {
             var accSender = Mapper.MapToAggregate(t.SenderAccount);
             var accRecip = Mapper.MapToAggregate(t.RecipientAccount);
-            var transaction = new Aggregates.Transaction(senderAccountNumber: accSender,
+            var transaction = new Transaction(senderAccountNumber: accSender,
                 recipientAccountNumber: accRecip, amount: t.Amount, transactionId: t.Id);
                 
             await transaction.MakeTransaction(CancellationToken.None);

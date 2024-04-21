@@ -4,6 +4,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Transactions", "Transaction
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataAccess", "DataAccess\DataAccess.csproj", "{7C648DA2-FE52-40BB-8FF0-192AE66C6AE7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Domain", "Domain\Domain.csproj", "{9BD0B787-52EF-4597-8B39-B825580F3836}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Api", "Api\Api.csproj", "{C54AAC93-DCCB-47D4-922C-F90FB342354C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +22,13 @@ Global
 		{7C648DA2-FE52-40BB-8FF0-192AE66C6AE7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7C648DA2-FE52-40BB-8FF0-192AE66C6AE7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7C648DA2-FE52-40BB-8FF0-192AE66C6AE7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9BD0B787-52EF-4597-8B39-B825580F3836}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9BD0B787-52EF-4597-8B39-B825580F3836}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9BD0B787-52EF-4597-8B39-B825580F3836}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9BD0B787-52EF-4597-8B39-B825580F3836}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C54AAC93-DCCB-47D4-922C-F90FB342354C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C54AAC93-DCCB-47D4-922C-F90FB342354C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C54AAC93-DCCB-47D4-922C-F90FB342354C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C54AAC93-DCCB-47D4-922C-F90FB342354C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

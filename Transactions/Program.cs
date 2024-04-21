@@ -1,17 +1,18 @@
 
 using System.Net;
+using System.Runtime.CompilerServices;
+using Api.Dto;
+using Api.Dto.CreateDto;
 using DataAccess;
+using Domain.Services;
+using Domain.Services.Implementations;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
-using Transactions.Aggregates;
-using Transactions.DomainServices;
-using Transactions.DomainServices.Implementations;
-using Transactions.Dto;
-using Transactions.Dto.CreateDto;
 using Transactions.Infrastructure;
 using Transactions.Jobs;
+using Transactions.StartupExtensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.UseAppSettings();
 
 var connectionstring = "Host=localhost;Port=5432;Database=transactions;Username=postgres;Password=postgres;";
 builder.Services.AddDbContext<TransactionsContext>(opt =>
@@ -26,24 +28,26 @@ builder.Services.AddDbContext<TransactionsContext>(opt =>
     opt.UseNpgsql(connectionstring);
 });
 
+builder.Services.AddMediatR(e => e.RegisterServicesFromAssemblies(AppDomain.CurrentDomain.GetAssemblies()));
+
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
-builder.Services.AddQuartz(q =>
-{
-    q.UseMicrosoftDependencyInjectionJobFactory();
-    // Just use the name of your job that you created in the Jobs folder.
-    q.AddJob<TransactionProcessor>(TransactionProcessor.Key);
-
-    q.AddTrigger(opts => opts
-        .ForJob(TransactionProcessor.Key)
-        .WithIdentity("TransactionProcessor-startTrigger")
-        .WithSimpleSchedule(x => x         
-            .WithIntervalInMinutes(1)
-            .RepeatForever())
-        .StartNow()
-    );
-});
-builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
+// builder.Services.AddQuartz(q =>
+// {
+//     q.UseMicrosoftDependencyInjectionJobFactory();
+//     // Just use the name of your job that you created in the Jobs folder.
+//     q.AddJob<TransactionProcessor>(TransactionProcessor.Key);
+//
+//     q.AddTrigger(opts => opts
+//         .ForJob(TransactionProcessor.Key)
+//         .WithIdentity("TransactionProcessor-startTrigger")
+//         .WithSimpleSchedule(x => x         
+//             .WithIntervalInSeconds(2)
+//             .RepeatForever())
+//         .StartNow()
+//     );
+// });
+// builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 
 
 
@@ -108,6 +112,34 @@ app.MapPost("/customer/{customerId}/openaccount",
             return result == null || result.HasError ? TypedResults.BadRequest(result) : TypedResults.Ok(result);
         })
     .WithName("OpenAccount")
+    .Produces<AccountDto>()
+    .Produces(200)
+    .Produces(400)
+    .Produces(500)
+    .WithOpenApi();
+
+app.MapPost("/account/{accountNumber}/deposit/{amount}",
+        async Task<Results<Ok<AccountDto>, BadRequest<AccountDto>>> (string accountNumber, decimal amount,
+            CancellationToken cancellationToken, [FromServices] ITransactionService transactionService) =>
+        {
+            var result = await transactionService.Deposit(accountNumber, amount, cancellationToken);
+            return result == null || result.HasError ? TypedResults.BadRequest(result) : TypedResults.Ok(result);
+        })
+    .WithName("Deposit")
+    .Produces<AccountDto>()
+    .Produces(200)
+    .Produces(400)
+    .Produces(500)
+    .WithOpenApi();
+
+app.MapPost("/account/{accountNumber}/debit/{amount}",
+        async Task<Results<Ok<AccountDto>, BadRequest<AccountDto>>> (string accountNumber, decimal amount,
+            CancellationToken cancellationToken, [FromServices] ITransactionService transactionService) =>
+        {
+            var result = await transactionService.Debit(accountNumber, amount, cancellationToken);
+            return result == null || result.HasError ? TypedResults.BadRequest(result) : TypedResults.Ok(result);
+        })
+    .WithName("Debit")
     .Produces<AccountDto>()
     .Produces(200)
     .Produces(400)

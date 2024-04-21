@@ -1,26 +1,17 @@
-﻿using System.Net;
-using Newtonsoft.Json;
+﻿using Api.Dto;
 using Newtonsoft.Json.Linq;
-using Transactions.Dto;
 
 namespace Transactions.Infrastructure;
 
-public class ExceptionHandleMiddleware
+public class ExceptionHandleMiddleware(RequestDelegate next)
 {
-    private readonly RequestDelegate _next;
-
-    public ExceptionHandleMiddleware(RequestDelegate next)
-    {
-        _next = next;
-    }
-
     public async Task Invoke(HttpContext httpContext, IWebHostEnvironment environment)
     {
         httpContext.Request.EnableBuffering();
 
         try
         {
-            await _next(httpContext);
+            await next(httpContext);
         }
         catch (Exception ex)
         {

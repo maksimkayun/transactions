@@ -47,5 +47,7 @@ public class TransactionsContext : DbContext
 
         modelBuilder.Entity<Transaction>()
             .HasOne<TransactionStatus>(e => e.TransactionStatus);
+
+        modelBuilder.Entity<Account>().HasIndex(e => e.AccountNumber);
     }
 }
