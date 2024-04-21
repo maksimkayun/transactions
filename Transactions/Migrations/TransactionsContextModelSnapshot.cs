@@ -126,10 +126,9 @@ namespace Transactions.Migrations
                             b1.Property<Guid>("AccountId")
                                 .HasColumnType("uuid");
 
-                            b1.Property<string>("Value")
-                                .IsRequired()
+                            b1.Property<long>("Value")
                                 .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
+                                .HasColumnType("bigint")
                                 .HasColumnName("Number");
 
                             b1.HasKey("AccountId");

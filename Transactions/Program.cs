@@ -84,7 +84,7 @@ app.MapGet("/customer/{id}", async Task<Results<Ok<CustomerDto>, BadRequest<Cust
     .Produces(400)
     .Produces(500)
     .WithOpenApi();
-//
+
 app.MapPost("/customer/create", async ([FromBody] CreateCustomerDto customer,
         CancellationToken cancellationToken, [FromServices] IMediator mediator) =>
     {
@@ -97,20 +97,29 @@ app.MapPost("/customer/create", async ([FromBody] CreateCustomerDto customer,
     .Produces(400)
     .Produces(500)
     .WithOpenApi();
-//
-// app.MapPost("/customer/{customerId}/openaccount",
-//         async Task<Results<Ok<AccountDto>, BadRequest<AccountDto>>> (string customerId,
-//             CancellationToken cancellationToken, [FromServices] ICustomerService customerService) =>
-//         {
-//             var result = await customerService.OpenAccount(customerId, cancellationToken);
-//             return result == null || result.HasError ? TypedResults.BadRequest(result) : TypedResults.Ok(result);
-//         })
-//     .WithName("OpenAccount")
-//     .Produces<AccountDto>()
-//     .Produces(200)
-//     .Produces(400)
-//     .Produces(500)
-//     .WithOpenApi();
+
+app.MapPost("/customer/{customerId}/openaccount/{startAmount}",
+        async Task<Results<Ok<Account>, BadRequest<AccountDto>>> (string customerId, decimal startAmount,
+            CancellationToken cancellationToken, [FromServices] IMediator mediator) =>
+        {
+            var findCustQuery = new GetCustomerQuery(customerId);
+            var customer = await mediator.Send(findCustQuery, cancellationToken);
+            if (customer.HasError)
+            {
+                var accError = ErrorDtoCreator.Create<AccountDto>(customer.ErrorInfo!.Message);
+                return TypedResults.BadRequest(accError);
+            }
+
+            var openAccountCommand = new OpenAccountCommand(customer, startAmount);
+            var openedAcc = await mediator.Send(openAccountCommand, cancellationToken);
+
+            return TypedResults.Ok(openedAcc.Account);
+        })
+    .WithName("OpenAccount")
+    .Produces(200)
+    .Produces(400)
+    .Produces(500)
+    .WithOpenApi();
 //
 // app.MapPost("/account/{accountNumber}/deposit/{amount}",
 //         async Task<Results<Ok<AccountDto>, BadRequest<AccountDto>>> (string accountNumber, decimal amount,

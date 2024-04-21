@@ -166,9 +166,10 @@ public class CustomerId
 
 public class AccountNumber
 {
-    public string Value { get; }
+    public static long START_VALUE = 7770000;
+    public long Value { get; }
 
-    private AccountNumber(string value)
+    private AccountNumber(long value)
     {
         Value = value;
     }
@@ -182,7 +183,7 @@ public class AccountNumber
 
         if (long.TryParse(value, out var val))
         {
-            return new AccountNumber(value);
+            return new AccountNumber(val);
         }
 
         throw new InvalidAccountNumberFormatException(badValue: value);
@@ -190,16 +191,16 @@ public class AccountNumber
     
     public static AccountNumber Of(long value)
     {
-        if (value >= 7770000)
+        if (value >= START_VALUE)
         {
-            return new AccountNumber(value.ToString());
+            return new AccountNumber(value);
         }
         throw new InvalidAccountNumberFormatException(badValue: value.ToString());
     }
     
     public static implicit operator string(AccountNumber name)
     {
-        return name.Value;
+        return name.Value.ToString();
     }
 }
 

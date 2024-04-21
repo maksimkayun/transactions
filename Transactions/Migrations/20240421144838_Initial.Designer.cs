@@ -12,7 +12,7 @@ using Transactions;
 namespace Transactions.Migrations
 {
     [DbContext(typeof(TransactionsContext))]
-    [Migration("20240421132132_Initial")]
+    [Migration("20240421144838_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -108,6 +108,10 @@ namespace Transactions.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
                     b.ToTable("TransactionStatuses");
@@ -125,10 +129,9 @@ namespace Transactions.Migrations
                             b1.Property<Guid>("AccountId")
                                 .HasColumnType("uuid");
 
-                            b1.Property<string>("Value")
-                                .IsRequired()
+                            b1.Property<long>("Value")
                                 .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
+                                .HasColumnType("bigint")
                                 .HasColumnName("Number");
 
                             b1.HasKey("AccountId");

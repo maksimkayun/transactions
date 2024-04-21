@@ -9,7 +9,7 @@ public class Customer : Aggregate<CustomerId>
     public bool IsDeleted { get; private set; } = default!;
     public string Name { get; private set; } = default!;
 
-    private List<Account> _accounts = default!;
+    private List<Account> _accounts;
     
     public IReadOnlyCollection<Account> Accounts => _accounts;
 
@@ -32,6 +32,10 @@ public class Customer : Aggregate<CustomerId>
     public Account OpenAccount(long accNumber, decimal amount = 0)
     {
         var newAccount = Account.Create(AccountId.Of(NewId.NextGuid()), accountNumber: AccountNumber.Of(accNumber), amount);
+        if (_accounts == null)
+        {
+            _accounts = new List<Account>();
+        }
         _accounts.Add(newAccount);
         var @event = new ChangeCustomerDomainEvent(this);
         this.AddDomainEvent(@event);
