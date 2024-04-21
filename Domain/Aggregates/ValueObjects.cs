@@ -1,4 +1,6 @@
 ﻿using Domain.Aggregates.Common;
+using Domain.Aggregates.Exceptions;
+using MassTransit;
 
 namespace Domain.Aggregates;
 
@@ -9,6 +11,8 @@ public class TransactionStatus : Enumeration
     public static TransactionStatus Completed = new(3, nameof(Completed), "Транзакция обработана");
     public static TransactionStatus Cancelled = new(4, nameof(Cancelled), "Транзакция отменена");
 
+    public TransactionStatus() : base(Created.Id, Created.Name)
+    {}
     public void WithReason(string descr)
     {
         if (Equals(this, Cancelled))
@@ -23,69 +27,34 @@ public class TransactionStatus : Enumeration
         Description = description;
     }
 }
-
-public class AccountNumber : ValueObject<AccountNumber>
+public class AccountId
 {
-    private decimal _amount;
-    public string Number { get; private set; }
-    public string Id { get; private set; }
+    public Guid Value { get; }
 
-    private AccountNumber(string id, string number, decimal amount)
+    private AccountId(Guid value)
     {
-        _amount = amount >= 0 ? amount : throw new Exception("Сумма для начисления должна быть больше 0!");
-        Number = number;
-        Id = id;
+        Value = value;
     }
 
-    public static AccountNumber CreateNewAccountNumber(string id, string number, decimal amount) =>
-        new AccountNumber(id, number, amount);
-
-    public static AccountNumber CreateAccountNumber(string number, Customer customer)
+    public static AccountId Of(Guid value)
     {
-        if (customer.Accounts.All(e => e.Number != number))
+        if (value == Guid.Empty)
         {
-            throw new Exception(
-                $"Для указанного клиента с ID={customer.CustomerId} не существует ЛС с номером={number}");
+            throw new InvalidAccountIdException(value);
         }
 
-        return new AccountNumber(customer.Accounts.Single(e => e.Number == number).Id, number,
-            customer.Accounts.Single(e => e.Number == number).GetAmount());
-    }
-    
-    public decimal GetAmount() => _amount;
-
-    public decimal Increase(decimal value)
-    {
-        if (value > 0)
-        {
-            _amount += value;
-        }
-        else
-        {
-            throw new Exception("Сумма для начисления должна быть больше 0!");
-        }
-
-        return GetAmount();
-    }
-    
-    public decimal Decrease(decimal value)
-    {
-        if (value > 0 && GetAmount() - value >= 0)
-        {
-            _amount -= value;
-        }
-        else
-        {
-            throw new Exception(value <=  0 ? "Сумма для списания должна быть больше 0!" : "Недостаточно средств для списания!");
-        }
-
-        return GetAmount();
+        return new AccountId(value);
     }
 
-    protected override bool EqualsCore(AccountNumber other)
-        => this.GetHashCodeCore() == other.GetHashCodeCore();
+    public static implicit operator Guid(AccountId airportId)
+    {
+        return airportId.Value;
+    }
 
-    protected override int GetHashCodeCore() => Id.GetHashCode() + Number.GetHashCode();
+    public override string ToString()
+    {
+        return Value.ToString();
+    }
 }
 
 public class TransactionResult : ValueObject<TransactionResult>
@@ -132,3 +101,105 @@ public class TransactionResult : ValueObject<TransactionResult>
         return this;
     }
 }
+
+
+
+public class TransactionId
+{
+    public Guid Value { get; }
+
+    private TransactionId(Guid value)
+    {
+        Value = value;
+    }
+
+    public static TransactionId Of(Guid value)
+    {
+        if (value == Guid.Empty)
+        {
+            throw new InvalidTransactionIdException(value);
+        }
+
+        return new TransactionId(value);
+    }
+
+    public static implicit operator Guid(TransactionId airportId)
+    {
+        return airportId.Value;
+    }
+}
+
+public class CustomerId
+{
+    public Guid Value { get; }
+
+    private CustomerId(Guid value)
+    {
+        Value = value;
+    }
+
+    public static CustomerId Of(Guid value)
+    {
+        if (value == Guid.Empty)
+        {
+            throw new InvalidCustomerIdException(value);
+        }
+
+        return new CustomerId(value);
+    }
+    
+    public static CustomerId Of(string value)
+    {
+        if (!string.IsNullOrWhiteSpace(value) && Guid.TryParse(value, out var val) && val != Guid.Empty)
+        {
+            return new CustomerId(val);
+        }
+        
+        throw new InvalidCustomerIdException(value);
+    }
+
+    public static implicit operator Guid(CustomerId customerId)
+    {
+        return customerId.Value;
+    }
+}
+
+public class AccountNumber
+{
+    public string Value { get; }
+
+    private AccountNumber(string value)
+    {
+        Value = value;
+    }
+
+    public static AccountNumber Of(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new InvalidAccountNumberException();
+        }
+
+        if (long.TryParse(value, out var val))
+        {
+            return new AccountNumber(value);
+        }
+
+        throw new InvalidAccountNumberFormatException(badValue: value);
+    }
+    
+    public static AccountNumber Of(long value)
+    {
+        if (value >= 7770000)
+        {
+            return new AccountNumber(value.ToString());
+        }
+        throw new InvalidAccountNumberFormatException(badValue: value.ToString());
+    }
+    
+    public static implicit operator string(AccountNumber name)
+    {
+        return name.Value;
+    }
+}
+

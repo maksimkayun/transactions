@@ -1,37 +1,45 @@
 ﻿using Domain.Aggregates.Common;
+using Domain.Aggregates.Events;
+using MassTransit;
 
 namespace Domain.Aggregates;
 
-public class Customer : Entity<Customer>
+public class Customer : Aggregate<CustomerId>
 {
-    public bool IsDeleted { get; private set; }
-    public Customer Id { get; private set; }
-    public string CustomerId { get; }
-    public string Name { get; }
+    public bool IsDeleted { get; private set; } = default!;
+    public string Name { get; private set; } = default!;
 
-    private readonly List<AccountNumber> _accounts;
+    private List<Account> _accounts = default!;
     
-    public IReadOnlyCollection<AccountNumber> Accounts => _accounts;
+    public IReadOnlyCollection<Account> Accounts => _accounts;
 
-    public Customer(string name, string? customerId = null, List<AccountNumber>? accounts = null)
+    public static Customer Create(CustomerId customerId, string name)
     {
-        Id = this;
-        IsDeleted = false;
-        _accounts = [];
-        CustomerId =  customerId ?? Guid.NewGuid().ToString();
-        Name = name;
-        _accounts = accounts ?? new List<AccountNumber>();
+        var cust = new Customer
+        {
+            Id = customerId,
+            Name = name,
+            IsDeleted = false,
+            _accounts = new List<Account>()
+        };
+
+        var @event = new CustomerCreatedDomainEvent(cust);
+        cust.AddDomainEvent(@event);
+
+        return cust;
     }
 
-    public AccountNumber OpenAccount(long accNumber, decimal amount = 0)
+    public Account OpenAccount(long accNumber, decimal amount = 0)
     {
-        var newAccount = AccountNumber.CreateNewAccountNumber(Guid.NewGuid().ToString(), accNumber.ToString(),
-            amount > 0 ? amount : decimal.Zero);
+        var newAccount = Account.Create(AccountId.Of(NewId.NextGuid()), accountNumber: AccountNumber.Of(accNumber), amount);
         _accounts.Add(newAccount);
+        var @event = new ChangeCustomerDomainEvent(this);
+        this.AddDomainEvent(@event);
+        
         return newAccount;
     }
 
-    public AccountNumber? CloseAccount(long number)
+    public Account? CloseAccount(long number)
     {
         var acc = _accounts.FirstOrDefault(e => e.Number == number.ToString());
         if (acc != null)

@@ -1,34 +1,42 @@
 ﻿using Domain.Aggregates.Common;
+using Domain.Aggregates.Events;
+using Domain.Aggregates.Exceptions;
+using MassTransit;
 
 namespace Domain.Aggregates;
 
-public class Transaction : IAggregate<Transaction>
+public class Transaction : Aggregate<TransactionId>
 {
     public bool IsDeleted { get; private set; }
-    public Transaction Id { get; private set; }
-    public string TransactionId { get; }
     public TransactionStatus Status { get; private set; }
     
-    public AccountNumber RecipientAccountNumber { get; private set; }
-    public AccountNumber SenderAccountNumber { get; private set; }
+    public Account RecipientAccount { get; private set; }
+    public Account SenderAccount { get; private set; }
     
     public decimal Amount { get; private set; }
     private TransactionResult Result;
-    
-    public Transaction(AccountNumber recipientAccountNumber, AccountNumber senderAccountNumber, decimal amount, string? transactionId = null)
+
+    public static Transaction Create(Account senderAccount, Account recipientAccount, decimal amount)
     {
-        Id = this;
-        TransactionId = transactionId ?? Guid.NewGuid().ToString();
-        Status = TransactionStatus.Created;
-
-        if (recipientAccountNumber.Equals(senderAccountNumber))
+        if (senderAccount.Number.Value == recipientAccount.Number.Value)
         {
-            throw new Exception("Лицевые счета совпадают, транзакция невозможна");
+            throw new AccountsMatchException("Лицевые счета совпадают, транзакция невозможна");
         }
-        RecipientAccountNumber = recipientAccountNumber;
-        SenderAccountNumber = senderAccountNumber;
+        
+        var tr = new Transaction
+        {
+            Id = TransactionId.Of(NewId.NextGuid()),
+            IsDeleted = false,
+            Status = TransactionStatus.Created,
+            RecipientAccount = recipientAccount,
+            SenderAccount = senderAccount,
+            Amount = amount > 0 ? amount : throw new IncorrectTransferAmountException("Сумма для перевода должна быть положительным числом!")
+        };
 
-        Amount = amount > 0 ? amount : throw new Exception("Сумма для перевода должна быть положительным числом!");
+        var @event = new TransactionCreatedDomainEvent(tr);
+        tr.AddDomainEvent(@event);
+
+        return tr;
     }
 
     public async Task<TransactionStatus> MakeTransaction(CancellationToken cancellationToken)
@@ -45,8 +53,8 @@ public class Transaction : IAggregate<Transaction>
         {
             try
             {
-                var senderRemains = SenderAccountNumber.Decrease(Amount);
-                var recipientRemains = RecipientAccountNumber.Increase(Amount);
+                var senderRemains = SenderAccount.Decrease(Amount);
+                var recipientRemains = RecipientAccount.Increase(Amount);
                 Result = new TransactionResult(senderRemains, recipientRemains, Status);
                 
                 Result.UpdateStatus(RollingStatus());
@@ -54,8 +62,8 @@ public class Transaction : IAggregate<Transaction>
             }
             catch (Exception e)
             {
-                var senderRemains = SenderAccountNumber.GetAmount();
-                var recipientRemains = RecipientAccountNumber.GetAmount();
+                var senderRemains = SenderAccount.Amount;
+                var recipientRemains = RecipientAccount.Amount;
                 Result = new TransactionResult(senderRemains, recipientRemains, Status);
                 Result.UpdateStatus(CancelTransaction(null));
             }
