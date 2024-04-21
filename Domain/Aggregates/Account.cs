@@ -5,7 +5,6 @@ namespace Domain.Aggregates;
 
 public class Account : Aggregate<AccountId>
 {
-    private decimal _amount;
     public AccountNumber Number { get; private set; } = default!;
     
     public List<Transaction> IncomingTransactions { get; private set; } = default!;
@@ -16,7 +15,7 @@ public class Account : Aggregate<AccountId>
         var acc = new Account
         {
             IsDeleted = false,
-            _amount = amount > 0 ? amount : 0,
+            Amount = amount > 0 ? amount : 0,
             Number = accountNumber,
             Id = accountId,
             IncomingTransactions = new List<Transaction>(),
@@ -39,13 +38,13 @@ public class Account : Aggregate<AccountId>
         return this;
     }
     
-    public decimal Amount => _amount;
+    public decimal Amount { get; private set; }
 
     public decimal Increase(decimal value)
     {
         if (value > 0)
         {
-            _amount += value;
+            Amount += value;
         }
         else
         {
@@ -59,7 +58,7 @@ public class Account : Aggregate<AccountId>
     {
         if (value > 0 && Amount - value >= 0)
         {
-            _amount -= value;
+            Amount -= value;
         }
         else
         {

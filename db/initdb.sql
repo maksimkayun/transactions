@@ -5,7 +5,7 @@
 -- Dumped from database version 16.2 (Debian 16.2-1.pgdg120+2)
 -- Dumped by pg_dump version 16.2
 
--- Started on 2024-04-21 17:50:52
+-- Started on 2024-04-21 18:50:28
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -49,6 +49,7 @@ SET default_table_access_method = heap;
 CREATE TABLE public."Account" (
     "Id" uuid NOT NULL,
     "Number" bigint NOT NULL,
+    "Amount" numeric NOT NULL,
     "CustomerId" uuid,
     "IsDeleted" boolean NOT NULL
 );
@@ -71,18 +72,18 @@ CREATE TABLE public."Customer" (
 ALTER TABLE public."Customer" OWNER TO postgres;
 
 --
--- TOC entry 220 (class 1259 OID 16415)
+-- TOC entry 220 (class 1259 OID 16417)
 -- Name: Transaction; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public."Transaction" (
     "Id" uuid NOT NULL,
-    "IsDeleted" boolean NOT NULL,
     "StatusId" integer NOT NULL,
     "RecipientAccountId" uuid,
     "SenderAccountId" uuid NOT NULL,
     "Amount" numeric NOT NULL,
-    "AccountId" uuid
+    "AccountId" uuid,
+    "IsDeleted" boolean NOT NULL
 );
 
 
@@ -136,7 +137,7 @@ ALTER TABLE public."__EFMigrationsHistory" OWNER TO postgres;
 -- Data for Name: Account; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."Account" ("Id", "Number", "CustomerId", "IsDeleted") FROM stdin;
+COPY public."Account" ("Id", "Number", "Amount", "CustomerId", "IsDeleted") FROM stdin;
 \.
 
 
@@ -151,12 +152,12 @@ COPY public."Customer" ("Id", "IsDeleted", "Name") FROM stdin;
 
 
 --
--- TOC entry 3388 (class 0 OID 16415)
+-- TOC entry 3388 (class 0 OID 16417)
 -- Dependencies: 220
 -- Data for Name: Transaction; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."Transaction" ("Id", "IsDeleted", "StatusId", "RecipientAccountId", "SenderAccountId", "Amount", "AccountId") FROM stdin;
+COPY public."Transaction" ("Id", "StatusId", "RecipientAccountId", "SenderAccountId", "Amount", "AccountId", "IsDeleted") FROM stdin;
 \.
 
 
@@ -181,7 +182,7 @@ COPY public."TransactionStatuses" ("Id", "Description", "Name") FROM stdin;
 --
 
 COPY public."__EFMigrationsHistory" ("MigrationId", "ProductVersion") FROM stdin;
-20240421144838_Initial	8.0.2
+20240421154708_Initial	8.0.2
 \.
 
 
@@ -195,7 +196,7 @@ SELECT pg_catalog.setval('public."TransactionStatuses_Id_seq"', 1, false);
 
 
 --
--- TOC entry 3228 (class 2606 OID 16409)
+-- TOC entry 3228 (class 2606 OID 16411)
 -- Name: Account PK_Account; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -213,7 +214,7 @@ ALTER TABLE ONLY public."Customer"
 
 
 --
--- TOC entry 3234 (class 2606 OID 16421)
+-- TOC entry 3234 (class 2606 OID 16423)
 -- Name: Transaction PK_Transaction; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -240,7 +241,7 @@ ALTER TABLE ONLY public."__EFMigrationsHistory"
 
 
 --
--- TOC entry 3225 (class 1259 OID 16442)
+-- TOC entry 3225 (class 1259 OID 16444)
 -- Name: IX_Account_CustomerId; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -248,7 +249,7 @@ CREATE INDEX "IX_Account_CustomerId" ON public."Account" USING btree ("CustomerI
 
 
 --
--- TOC entry 3226 (class 1259 OID 16443)
+-- TOC entry 3226 (class 1259 OID 16445)
 -- Name: IX_Account_Number; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -256,7 +257,7 @@ CREATE INDEX "IX_Account_Number" ON public."Account" USING btree ("Number");
 
 
 --
--- TOC entry 3229 (class 1259 OID 16444)
+-- TOC entry 3229 (class 1259 OID 16446)
 -- Name: IX_Transaction_AccountId; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -264,7 +265,7 @@ CREATE INDEX "IX_Transaction_AccountId" ON public."Transaction" USING btree ("Ac
 
 
 --
--- TOC entry 3230 (class 1259 OID 16445)
+-- TOC entry 3230 (class 1259 OID 16447)
 -- Name: IX_Transaction_RecipientAccountId; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -272,7 +273,7 @@ CREATE INDEX "IX_Transaction_RecipientAccountId" ON public."Transaction" USING b
 
 
 --
--- TOC entry 3231 (class 1259 OID 16446)
+-- TOC entry 3231 (class 1259 OID 16448)
 -- Name: IX_Transaction_SenderAccountId; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -280,7 +281,7 @@ CREATE INDEX "IX_Transaction_SenderAccountId" ON public."Transaction" USING btre
 
 
 --
--- TOC entry 3232 (class 1259 OID 16447)
+-- TOC entry 3232 (class 1259 OID 16449)
 -- Name: IX_Transaction_StatusId; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -288,7 +289,7 @@ CREATE INDEX "IX_Transaction_StatusId" ON public."Transaction" USING btree ("Sta
 
 
 --
--- TOC entry 3235 (class 2606 OID 16410)
+-- TOC entry 3235 (class 2606 OID 16412)
 -- Name: Account FK_Account_Customer_CustomerId; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -297,7 +298,7 @@ ALTER TABLE ONLY public."Account"
 
 
 --
--- TOC entry 3236 (class 2606 OID 16422)
+-- TOC entry 3236 (class 2606 OID 16424)
 -- Name: Transaction FK_Transaction_Account_AccountId; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -306,7 +307,7 @@ ALTER TABLE ONLY public."Transaction"
 
 
 --
--- TOC entry 3237 (class 2606 OID 16427)
+-- TOC entry 3237 (class 2606 OID 16429)
 -- Name: Transaction FK_Transaction_Account_RecipientAccountId; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -315,7 +316,7 @@ ALTER TABLE ONLY public."Transaction"
 
 
 --
--- TOC entry 3238 (class 2606 OID 16432)
+-- TOC entry 3238 (class 2606 OID 16434)
 -- Name: Transaction FK_Transaction_Account_SenderAccountId; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -324,7 +325,7 @@ ALTER TABLE ONLY public."Transaction"
 
 
 --
--- TOC entry 3239 (class 2606 OID 16437)
+-- TOC entry 3239 (class 2606 OID 16439)
 -- Name: Transaction FK_Transaction_TransactionStatuses_StatusId; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -332,7 +333,7 @@ ALTER TABLE ONLY public."Transaction"
     ADD CONSTRAINT "FK_Transaction_TransactionStatuses_StatusId" FOREIGN KEY ("StatusId") REFERENCES public."TransactionStatuses"("Id") ON DELETE CASCADE;
 
 
--- Completed on 2024-04-21 17:50:52
+-- Completed on 2024-04-21 18:50:29
 
 --
 -- PostgreSQL database dump complete

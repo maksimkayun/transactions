@@ -149,23 +149,24 @@ app.MapPost("/customer/{customerId}/openaccount/{startAmount}",
 //     .Produces(500)
 //     .WithOpenApi();
 //
-// app.MapPost("/transactions/sendmoney/",
-//         async Task<Results<Ok<TransactionDto>, BadRequest<TransactionDto>>> (
-//             
-//             [FromQuery] string senderAccountNumber,
-//             [FromQuery] string recipientAccountNumber,
-//             [FromQuery] decimal amount,
-//             CancellationToken cancellationToken, [FromServices] ITransactionService transactionService) =>
-//         {
-//             var result = await transactionService.MakeTransaction(senderAccountNumber, recipientAccountNumber, amount, cancellationToken);
-//             return result == null || result.HasError ? TypedResults.BadRequest(result) : TypedResults.Ok(result);
-//         })
-//     .WithName("SendMoney")
-//     .Produces<TransactionDto>()
-//     .Produces(200)
-//     .Produces(400)
-//     .Produces(500)
-//     .WithOpenApi();
+app.MapPost("/transactions/sendmoney/",
+        async Task<Results<Ok<TransactionDto>, BadRequest<TransactionDto>>> (
+            
+            [FromQuery] string senderAccountNumber,
+            [FromQuery] string recipientAccountNumber,
+            [FromQuery] decimal amount,
+            CancellationToken cancellationToken, [FromServices] IMediator mediator) =>
+        {
+            var tr = await mediator.Send(new SendMoneyCommand(senderAccountNumber, recipientAccountNumber, amount));
+
+            return tr.Transaction.HasError ? TypedResults.BadRequest(tr.Transaction) : TypedResults.Ok(tr.Transaction);
+        })
+    .WithName("SendMoney")
+    .Produces<TransactionDto>()
+    .Produces(200)
+    .Produces(400)
+    .Produces(500)
+    .WithOpenApi();
 //
 // app.MapGet("/transactions/{transactionId}",
 //         async Task<Results<Ok<TransactionDto>, BadRequest<TransactionDto>>> (

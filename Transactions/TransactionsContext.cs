@@ -32,16 +32,19 @@ public class TransactionsContext : DbContext
         modelBuilder.Entity<Account>().HasKey(r => r.Id);
         modelBuilder.Entity<Account>().Property(r => r.Id).ValueGeneratedNever()
             .HasConversion<Guid>(accountId => accountId.Value, dbId => AccountId.Of(dbId));
-        modelBuilder.Entity<Account>().OwnsOne(
-            x => x.Number,
-            a =>
-            {
-                a.Property(p => p.Value)
-                    .HasColumnName(nameof(Account.Number))
-                    .HasMaxLength(50)
-                    .IsRequired();
-                a.HasIndex(p => p.Value);
-            });
+        // modelBuilder.Entity<Account>().OwnsOne(
+        //     x => x.Number,
+        //     a =>
+        //     {
+        //         a.Property(p => p.Value)
+        //             .HasColumnName(nameof(Account.Number))
+        //             .IsRequired();
+        //         
+        //         a.HasIndex(p => p.Value);
+        //     });
+        modelBuilder.Entity<Account>().Property(p => p.Number)
+            .HasConversion<long>(ac => ac.Value, acDb => AccountNumber.Of(acDb));
+        modelBuilder.Entity<Account>().HasIndex(p => p.Number);
         
         modelBuilder.Entity<Transaction>().ToTable(nameof(Transaction));
         modelBuilder.Entity<Transaction>().HasKey(r => r.Id);
@@ -66,20 +69,16 @@ public class TransactionsContext : DbContext
 
         modelBuilder.Entity<Transaction>()
             .HasOne<Account>(e => e.SenderAccount)
-            .WithMany()
+            .WithMany(e=>e.OutgoingTransactions)
             .OnDelete(DeleteBehavior.SetNull);
         modelBuilder.Entity<Transaction>()
             .HasOne<Account>(e => e.RecipientAccount)
-            .WithMany()
+            .WithMany(e=>e.IncomingTransactions)
             .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<Transaction>()
-            .HasOne<Account>(e => e.RecipientAccount)
-            .WithMany(e => e.IncomingTransactions)
-            .OnDelete(DeleteBehavior.SetNull);
-
-        modelBuilder.Entity<Transaction>()
-            .HasOne<TransactionStatus>(e => e.Status);
+            .HasOne<TransactionStatus>(e => e.Status)
+            .WithMany();
 
         //modelBuilder.Entity<Account>().HasIndex(e => e.Number);
     }

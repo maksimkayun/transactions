@@ -24,10 +24,10 @@ public class OpenAccountCommandHandler : IRequestHandler<OpenAccountCommand, Ope
         var cust = _context.Customers.FirstOrDefault(e => e.Id == custId);
 
         var lastNumber = _context.Accounts.Any()
-            ? await _context.Accounts.AsNoTrackingWithIdentityResolution().Select(e => e.Number)
-                .MaxAsync(e => e.Value, cancellationToken)
-            : AccountNumber.START_VALUE;
-        var openedAcc = cust.OpenAccount(lastNumber + 1, request.StartAmount);
+            ? await _context.Accounts.AsNoTrackingWithIdentityResolution()
+                .MaxAsync(e => e.Number, cancellationToken)
+            : default;
+        var openedAcc = cust.OpenAccount((lastNumber?.Value ?? AccountNumber.START_VALUE) + 1, request.StartAmount);
 
         _context.Accounts.Add(openedAcc);
         await _context.SaveChangesAsync(cancellationToken);

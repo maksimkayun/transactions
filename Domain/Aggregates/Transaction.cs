@@ -7,7 +7,6 @@ namespace Domain.Aggregates;
 
 public class Transaction : Aggregate<TransactionId>
 {
-    public bool IsDeleted { get; private set; }
     public TransactionStatus Status { get; private set; }
     
     public Account RecipientAccount { get; private set; }
@@ -37,6 +36,18 @@ public class Transaction : Aggregate<TransactionId>
         tr.AddDomainEvent(@event);
 
         return tr;
+    }
+
+    public void Impoverish()
+    {
+        RecipientAccount = new Account()
+        {
+            Id = RecipientAccount.Id
+        };
+        SenderAccount = new Account()
+        {
+            Id = SenderAccount.Id
+        };
     }
 
     public async Task<TransactionStatus> MakeTransaction(CancellationToken cancellationToken)
