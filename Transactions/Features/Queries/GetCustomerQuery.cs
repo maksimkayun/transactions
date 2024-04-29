@@ -2,11 +2,11 @@
 using Domain.Aggregates;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Transactions;
+using Transactions.DataAccess;
 
-namespace Domain.Events.Queries;
+namespace Transactions.Features.Queries;
 
-public record GetCustomerQuery(string Id) : IRequest<CustomerDto>;
+public record GetCustomerQuery(string? Id, string? Name) : IRequest<CustomerDto>;
 
 public class GetCustomerQueryHandler : IRequestHandler<GetCustomerQuery, CustomerDto>
 {
@@ -19,29 +19,35 @@ public class GetCustomerQueryHandler : IRequestHandler<GetCustomerQuery, Custome
 
     public async Task<CustomerDto> Handle(GetCustomerQuery request, CancellationToken cancellationToken)
     {
-        var custId = CustomerId.Of(request.Id);
+        var custId = request.Id;
+        var custName = request.Name;
         var cust = await _context.Customers.AsNoTrackingWithIdentityResolution()
-            .FirstOrDefaultAsync(e => e.Id == custId, cancellationToken: cancellationToken);
-
+            .Include(customer => customer.Accounts)
+            .ThenInclude(account => account.OutgoingTransactions).Include(customer => customer.Accounts)
+            .ThenInclude(account => account.IncomingTransactions)
+            .FirstOrDefaultAsync(e => e.Id == custId || e.Name == custName, cancellationToken: cancellationToken);
+        
         if (cust == null)
         {
-            return ErrorDtoCreator.Create<CustomerDto>($"Customer with Id={request.Id} not found");
+            var specErr = request.Id == default ? "Name=" + custName : "Id=" + custId;
+            return ErrorDtoCreator.Create<CustomerDto>($"Customer with {specErr} not found");
         }
-
+        
         return new CustomerDto
         {
             ErrorInfo = null,
-            Id = cust.Id.Value.ToString(),
+            Id = cust.Id,
             Name = cust.Name,
             Accounts = cust.Accounts?.Select(e => new AccountDto
             {
                 ErrorInfo = null,
-                AccountNumber = e.Number.ToString()!,
-                OwnerId = cust.Id.ToString()!,
+                AccountNumber = e.AccountNumber.ToString(),
+                OwnerId = cust.Id,
                 Amount = e.Amount,
                 OutgoingTransactionIds = e.OutgoingTransactions?.Select(tr=> tr.Id.ToString()!).ToList(),
                 IncomingTransactionIds = e.IncomingTransactions?.Select(tr=> tr.Id.ToString()!).ToList(),
             }).ToList()
         };
+        throw new NotImplementedException();
     }
 }

@@ -1,15 +1,17 @@
-﻿using Domain.Aggregates;
+﻿//using Domain.Aggregates;
+
 using Domain.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Transactions.DataAccess.Models;
 
-namespace Transactions;
+namespace Transactions.DataAccess;
 
 public class TransactionsContext : DbContext
 {
     private IMediator _mediator;
-    
-    
+
+
     public virtual DbSet<Transaction> Transactions { get; set; }
     public virtual DbSet<Account> Accounts { get; set; }
     public virtual DbSet<Customer> Customers { get; set; }
@@ -27,62 +29,34 @@ public class TransactionsContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-
-        modelBuilder.Entity<Account>().ToTable(nameof(Account));
-        modelBuilder.Entity<Account>().HasKey(r => r.Id);
-        modelBuilder.Entity<Account>().Property(r => r.Id).ValueGeneratedNever()
-            .HasConversion<Guid>(accountId => accountId.Value, dbId => AccountId.Of(dbId));
-        // modelBuilder.Entity<Account>().OwnsOne(
-        //     x => x.Number,
-        //     a =>
-        //     {
-        //         a.Property(p => p.Value)
-        //             .HasColumnName(nameof(Account.Number))
-        //             .IsRequired();
-        //         
-        //         a.HasIndex(p => p.Value);
-        //     });
-        modelBuilder.Entity<Account>().Property(p => p.Number)
-            .HasConversion<long>(ac => ac.Value, acDb => AccountNumber.Of(acDb));
-        modelBuilder.Entity<Account>().HasIndex(p => p.Number);
-        
-        modelBuilder.Entity<Transaction>().ToTable(nameof(Transaction));
-        modelBuilder.Entity<Transaction>().HasKey(r => r.Id);
-        modelBuilder.Entity<Transaction>().Property(r => r.Id).ValueGeneratedNever()
-            .HasConversion<Guid>(trId => trId.Value, dbId => TransactionId.Of(dbId));
-        
-        modelBuilder.Entity<Customer>().ToTable(nameof(Customer));
-        modelBuilder.Entity<Customer>().HasKey(r => r.Id);
-        modelBuilder.Entity<Customer>().Property(r => r.Id).ValueGeneratedNever()
-            .HasConversion<Guid>(trId => trId.Value, dbId => CustomerId.Of(dbId));
-        
+        modelBuilder.Entity<Account>().HasKey(e => new
+        {
+            e.Id,
+            e.AccountNumber
+        });
         modelBuilder.Entity<Customer>().HasKey(e => e.Id);
         modelBuilder.Entity<Transaction>().HasKey(e => e.Id);
         modelBuilder.Entity<TransactionStatus>().HasKey(e => e.Id);
 
-
-
         modelBuilder.Entity<Account>()
-            .HasOne<Customer>()
+            .HasOne<Customer>(e => e.Owner)
             .WithMany(e => e.Accounts)
             .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<Transaction>()
             .HasOne<Account>(e => e.SenderAccount)
-            .WithMany(e=>e.OutgoingTransactions)
+            .WithMany(e => e.OutgoingTransactions)
             .OnDelete(DeleteBehavior.SetNull);
+
         modelBuilder.Entity<Transaction>()
             .HasOne<Account>(e => e.RecipientAccount)
-            .WithMany(e=>e.IncomingTransactions)
+            .WithMany(e => e.IncomingTransactions)
             .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<Transaction>()
-            .HasOne<TransactionStatus>(e => e.Status)
-            .WithMany();
-
-        //modelBuilder.Entity<Account>().HasIndex(e => e.Number);
+            .HasOne<TransactionStatus>(e => e.TransactionStatus);
     }
-    
+
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
     {
         var result = await base.SaveChangesAsync(cancellationToken);
@@ -92,7 +66,7 @@ public class TransactionsContext : DbContext
 
         return result;
     }
-    
+
     private async Task DispatchEvents(CancellationToken cancellationToken)
     {
         var domainEntities = ChangeTracker

@@ -45,6 +45,16 @@ public class AccountId
 
         return new AccountId(value);
     }
+    
+    public static AccountId Of(string value)
+    {
+        if (Guid.TryParse(value, out var val) && val != Guid.Empty)
+        {
+            return new AccountId(val); 
+        }
+        
+        throw new InvalidAccountIdException(val);
+    }
 
     public static implicit operator Guid(AccountId airportId)
     {
@@ -121,6 +131,15 @@ public class TransactionId
         }
 
         return new TransactionId(value);
+    }
+    public static TransactionId Of(string value)
+    {
+        if (!string.IsNullOrWhiteSpace(value) && Guid.TryParse(value, out var val) && val != Guid.Empty)
+        {
+            return new TransactionId(val);
+        }
+        
+        throw new InvalidTransactionIdException(value);
     }
 
     public static implicit operator Guid(TransactionId airportId)

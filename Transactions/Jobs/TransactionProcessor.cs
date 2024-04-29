@@ -1,5 +1,11 @@
-﻿using MediatR;
+﻿using Domain.Aggregates;
+using Domain.Aggregates.Events;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Quartz;
+using Transactions.DataAccess;
+using Transactions.Features;
+using Transactions.Utils;
 
 namespace Transactions.Jobs;
 
@@ -17,6 +23,17 @@ public class TransactionProcessor : IJob
 
     public async Task Execute(IJobExecutionContext context)
     {
-        
+        var notWorkingTransactions = _context.Transactions
+            .Include(t => t.TransactionStatus)
+            .Include(t => t.RecipientAccount)
+            .Include(t => t.SenderAccount)
+            .AsNoTrackingWithIdentityResolution()
+            .Where(tr => tr.TransactionStatus.Id == TransactionStatus.Created.Id).ToList();
+
+        foreach (var tr in notWorkingTransactions)
+        {
+            var trAggr = MappingService.TransactionFromDb(tr);
+            await _mediator.Publish(new TransactionCreatedDomainEvent(trAggr));
+        }
     }
 }

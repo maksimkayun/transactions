@@ -1,9 +1,10 @@
 ﻿using Domain.Aggregates.Common;
 using Domain.Aggregates.Events;
+using IAggregate = Domain.Common.IAggregate;
 
 namespace Domain.Aggregates;
 
-public class Account : Aggregate<AccountId>
+public class Account : Aggregate<AccountId>, IAggregate
 {
     public AccountNumber Number { get; private set; } = default!;
     

@@ -1,11 +1,13 @@
 ﻿using Domain.Aggregates;
-using Domain.Events;
+using Domain.Aggregates.Events;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Transactions.DataAccess;
+using Transactions.Features;
 
 namespace Transactions.DomainEventHandlers;
 
-public class TransactionCreatedHandler : INotificationHandler<TransactionCreated>
+public class TransactionCreatedHandler : INotificationHandler<TransactionCreatedDomainEvent>
 {
     private IMediator _mediator;
     private TransactionsContext _context;
@@ -16,7 +18,7 @@ public class TransactionCreatedHandler : INotificationHandler<TransactionCreated
         _context = context;
     }
 
-    public async Task Handle(TransactionCreated notification, CancellationToken cancellationToken)
+    public async Task Handle(TransactionCreatedDomainEvent notification, CancellationToken cancellationToken)
     {
     }
 }

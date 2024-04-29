@@ -2,44 +2,53 @@
 using Domain.Aggregates;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Transactions.DataAccess;
+using Transactions.Utils;
 
 namespace Transactions.Features.Commands;
 
 public record SendMoneyCommand(string SenderAccountNumber, string RecipientAccountNumber, decimal Amount) : IRequest<SendMoneyCommandResult>;
 
-public record SendMoneyCommandResult(TransactionDto Transaction);
+public record SendMoneyCommandResult(Transaction Transaction, ErrorInfo? ErrorInfo);
 
 public class SendMoneyCommandHandler : IRequestHandler<SendMoneyCommand, SendMoneyCommandResult>
 {
     private TransactionsContext _context;
+    private EventsExecutor _executor;
 
-    public SendMoneyCommandHandler(TransactionsContext context)
+    public SendMoneyCommandHandler(TransactionsContext context, EventsExecutor executor)
     {
         _context = context;
+        _executor = executor;
     }
 
     public async Task<SendMoneyCommandResult> Handle(SendMoneyCommand request, CancellationToken cancellationToken)
     {
-        var numbSender = AccountNumber.Of(request.SenderAccountNumber);
-        var numbRecipient = AccountNumber.Of(request.RecipientAccountNumber);
-        
-        var senderAcc = await _context.Accounts.AsNoTrackingWithIdentityResolution().FirstOrDefaultAsync(e => e.Number == numbSender, cancellationToken);
-        var recipientAcc = await _context.Accounts.AsNoTrackingWithIdentityResolution().FirstOrDefaultAsync(e => e.Number == numbRecipient, cancellationToken);
+        var senderNum = long.Parse(request.SenderAccountNumber);
+        var recNum = long.Parse(request.RecipientAccountNumber);
+        var accsDb = await
+            _context.Accounts.Include(x=>x.Owner)
+                .Where(x => x.AccountNumber == senderNum || x.AccountNumber == recNum).ToListAsync(cancellationToken);
 
-        var tr = Transaction.Create(senderAcc, recipientAcc, request.Amount);
-        tr.Impoverish();
-        tr = _context.Transactions.Add(tr).Entity;
-
-        await _context.SaveChangesAsync(cancellationToken);
-
-        return new SendMoneyCommandResult(new TransactionDto
+        if (accsDb.Count != 2)
         {
-            ErrorInfo = null,
-            Id = tr.Id.Value.ToString(),
-            SenderAccountNumber = tr.SenderAccount.Number.Value.ToString(),
-            RecipientAccountNumber = tr.RecipientAccount.Number.Value.ToString(),
-            Amount = tr.Amount,
-            Status = tr.Status.Description
-        });
+            throw new Exception($"accsDb.Count != 2. Fact: {accsDb.Count}");
+        }
+
+        var sender = MappingService.AccountFromDb(accsDb.First(a => a.AccountNumber == senderNum));
+        var recipient = MappingService.AccountFromDb(accsDb.First(a => a.AccountNumber == recNum));
+        var tr = Transaction.Create(sender, recipient, request.Amount);
+
+        var transaction = MappingService.TransactionMapAggregateToDb(tr);
+        transaction.TransactionStatus =
+            await _context.TransactionStatuses.FirstAsync(x => x.Id == transaction.TransactionStatus.Id, cancellationToken);
+        transaction.SenderAccount = accsDb.First(a => a.AccountNumber == senderNum);
+        transaction.RecipientAccount = accsDb.First(a => a.AccountNumber == recNum);
+        
+        await _context.Transactions.AddAsync(transaction, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
+        await _executor.ExecuteEvents(tr, cancellationToken);
+
+        return new SendMoneyCommandResult(tr, null);
     }
 }

@@ -2,10 +2,11 @@
 using Domain.Aggregates.Events;
 using Domain.Aggregates.Exceptions;
 using MassTransit;
+using IAggregate = Domain.Common.IAggregate;
 
 namespace Domain.Aggregates;
 
-public class Transaction : Aggregate<TransactionId>
+public class Transaction : Aggregate<TransactionId>, IAggregate
 {
     public TransactionStatus Status { get; private set; }
     

@@ -9,7 +9,7 @@ public class Entity<T>: IEntity<T>
     public bool IsDeleted { get; set; }
 }
 
-public abstract class Aggregate<TId> : Entity<TId>, IAggregate
+public abstract class Aggregate<TId> : Entity<TId>
 {
     private readonly List<IDomainEvent> _domainEvents = new();
 

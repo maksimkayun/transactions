@@ -1,10 +1,11 @@
 ﻿using Domain.Aggregates.Common;
 using Domain.Aggregates.Events;
 using MassTransit;
+using IAggregate = Domain.Common.IAggregate;
 
 namespace Domain.Aggregates;
 
-public class Customer : Aggregate<CustomerId>
+public class Customer : Aggregate<CustomerId>, IAggregate
 {
     public bool IsDeleted { get; private set; } = default!;
     public string Name { get; private set; } = default!;

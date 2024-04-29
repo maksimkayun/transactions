@@ -1,17 +1,20 @@
+using System.Reflection;
 using Api.Dto;
 using Api.Dto.CreateDto;
 using Domain.Aggregates;
-using Domain.Events.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
 using Transactions;
+using Transactions.DataAccess;
 using Transactions.Features.Commands;
+using Transactions.Features.Queries;
 using Transactions.Infrastructure;
 using Transactions.Jobs;
 using Transactions.StartupExtensions;
+using Transactions.Utils;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,31 +22,29 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.UseAppSettings();
+var appSettings = builder.UseAppSettings();
 
-var connectionstring = "Host=localhost;Port=5432;Database=transactions;Username=postgres;Password=postgres;";
 builder.Services.AddDbContext<TransactionsContext>(opt =>
 {
-    opt.UseNpgsql(connectionstring);
+    opt.UseNpgsql(appSettings.ConnectionString);
+}, ServiceLifetime.Transient);
+
+builder.Services.AddMediatR(e => e.RegisterServicesFromAssemblies(Assembly.GetEntryAssembly()));
+builder.Services.AddTransient<EventsExecutor>();
+
+builder.Services.AddQuartz(q =>
+{
+    q.UseMicrosoftDependencyInjectionJobFactory();
+    // Just use the name of your job that you created in the Jobs folder.
+    q.AddJob<TransactionProcessor>(TransactionProcessor.Key);
+
+    q.AddTrigger(opts => opts
+        .ForJob(TransactionProcessor.Key)
+        .WithIdentity("TransactionProcessor-startTrigger")
+        .StartNow()
+    );
 });
-
-builder.Services.AddMediatR(e => e.RegisterServicesFromAssemblies(AppDomain.CurrentDomain.GetAssemblies()));
-
-// builder.Services.AddQuartz(q =>
-// {
-//     q.UseMicrosoftDependencyInjectionJobFactory();
-//     // Just use the name of your job that you created in the Jobs folder.
-//     q.AddJob<TransactionProcessor>(TransactionProcessor.Key);
-//
-//     q.AddTrigger(opts => opts
-//         .ForJob(TransactionProcessor.Key)
-//         .WithIdentity("TransactionProcessor-startTrigger")
-//         .StartNow()
-//     );
-// });
-// builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
-
-
+builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 
 var app = builder.Build();
 
@@ -75,11 +76,24 @@ app.UseMiddleware<ExceptionHandleMiddleware>();
 app.MapGet("/customer/{id}", async Task<Results<Ok<CustomerDto>, BadRequest<CustomerDto>>> ([FromRoute] string id,
         CancellationToken cancellationToken, [FromServices] IMediator mediator) =>
     {
-        var query = new GetCustomerQuery(id);
+        var query = new GetCustomerQuery(id, null);
         var result = await mediator.Send(query,cancellationToken);
         return result.HasError ? TypedResults.BadRequest(result) : TypedResults.Ok(result);
     })
     .WithName("GetCustomerById")
+    .Produces(200)
+    .Produces(400)
+    .Produces(500)
+    .WithOpenApi();
+
+app.MapGet("/customer/name/{name}", async Task<Results<Ok<CustomerDto>, BadRequest<CustomerDto>>> ([FromRoute] string name,
+        CancellationToken cancellationToken, [FromServices] IMediator mediator) =>
+    {
+        var query = new GetCustomerQuery(null, name);
+        var result = await mediator.Send(query,cancellationToken);
+        return result.HasError ? TypedResults.BadRequest(result) : TypedResults.Ok(result);
+    })
+    .WithName("GetCustomerByName")
     .Produces(200)
     .Produces(400)
     .Produces(500)
@@ -102,7 +116,7 @@ app.MapPost("/customer/{customerId}/openaccount/{startAmount}",
         async Task<Results<Ok<Account>, BadRequest<AccountDto>>> (string customerId, decimal startAmount,
             CancellationToken cancellationToken, [FromServices] IMediator mediator) =>
         {
-            var findCustQuery = new GetCustomerQuery(customerId);
+            var findCustQuery = new GetCustomerQuery(customerId, null);
             var customer = await mediator.Send(findCustQuery, cancellationToken);
             if (customer.HasError)
             {
@@ -120,20 +134,20 @@ app.MapPost("/customer/{customerId}/openaccount/{startAmount}",
     .Produces(400)
     .Produces(500)
     .WithOpenApi();
-//
-// app.MapPost("/account/{accountNumber}/deposit/{amount}",
-//         async Task<Results<Ok<AccountDto>, BadRequest<AccountDto>>> (string accountNumber, decimal amount,
-//             CancellationToken cancellationToken, [FromServices] ITransactionService transactionService) =>
-//         {
-//             var result = await transactionService.Deposit(accountNumber, amount, cancellationToken);
-//             return result == null || result.HasError ? TypedResults.BadRequest(result) : TypedResults.Ok(result);
-//         })
-//     .WithName("Deposit")
-//     .Produces<AccountDto>()
-//     .Produces(200)
-//     .Produces(400)
-//     .Produces(500)
-//     .WithOpenApi();
+
+app.MapPost("/account/{accountNumber}/adjustment/{amount}/{mode}",
+        async Task<Results<Ok<Account>, BadRequest>> (string accountNumber, decimal amount, string mode,
+            CancellationToken cancellationToken, [FromServices] IMediator mediator) =>
+        {
+            var command = new AdjustmentCommand(amount, accountNumber, mode);
+            var result = await mediator.Send(command, cancellationToken);
+            return TypedResults.Ok(result.Account);
+        })
+    .WithName("Adjustment")
+    .Produces(200)
+    .Produces(400)
+    .Produces(500)
+    .WithOpenApi();
 //
 // app.MapPost("/account/{accountNumber}/debit/{amount}",
 //         async Task<Results<Ok<AccountDto>, BadRequest<AccountDto>>> (string accountNumber, decimal amount,
@@ -150,7 +164,7 @@ app.MapPost("/customer/{customerId}/openaccount/{startAmount}",
 //     .WithOpenApi();
 //
 app.MapPost("/transactions/sendmoney/",
-        async Task<Results<Ok<TransactionDto>, BadRequest<TransactionDto>>> (
+        async Task<Results<Ok<SendMoneyCommandResult>, BadRequest<TransactionDto>>> (
             
             [FromQuery] string senderAccountNumber,
             [FromQuery] string recipientAccountNumber,
@@ -159,7 +173,7 @@ app.MapPost("/transactions/sendmoney/",
         {
             var tr = await mediator.Send(new SendMoneyCommand(senderAccountNumber, recipientAccountNumber, amount));
 
-            return tr.Transaction.HasError ? TypedResults.BadRequest(tr.Transaction) : TypedResults.Ok(tr.Transaction);
+            return TypedResults.Ok(tr);
         })
     .WithName("SendMoney")
     .Produces<TransactionDto>()

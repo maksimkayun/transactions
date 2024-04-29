@@ -8,4 +8,9 @@ public class InvalidTransactionIdException : BadRequestException
         : base($"transactionId: '{transactionId}' is invalid.")
     {
     }
+    
+    public InvalidTransactionIdException(string transactionId)
+        : base($"transactionId: '{transactionId}' is invalid.")
+    {
+    }
 }

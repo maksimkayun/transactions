@@ -1,37 +1,48 @@
 ﻿using Api.Dto;
 using Domain.Aggregates;
+using Domain.Aggregates.Exceptions;
+using MassTransit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Transactions.DataAccess;
+using Transactions.Utils;
 
 namespace Transactions.Features.Commands;
 
 public record OpenAccountCommand(CustomerDto CustomerDto, decimal StartAmount) : IRequest<OpenAccountResult>;
 
-public record OpenAccountResult(Account Account);
+public record OpenAccountResult(Account Account, ErrorInfo? ErrorInfo);
 
 public class OpenAccountCommandHandler : IRequestHandler<OpenAccountCommand, OpenAccountResult>
 {
     private readonly TransactionsContext _context;
+    private EventsExecutor _executor;
 
-    public OpenAccountCommandHandler(TransactionsContext context)
+    public OpenAccountCommandHandler(TransactionsContext context, EventsExecutor executor)
     {
         _context = context;
+        _executor = executor;
     }
 
     public async Task<OpenAccountResult> Handle(OpenAccountCommand request, CancellationToken cancellationToken)
     {
-        var custId = CustomerId.Of(request.CustomerDto.Id);
-        var cust = _context.Customers.FirstOrDefault(e => e.Id == custId);
+        var cust = await _context.Customers.FirstOrDefaultAsync(e => e.Id == request.CustomerDto.Id, cancellationToken);
+        if (cust is null)
+        {
+            throw new InvalidCustomerIdException(request.CustomerDto.Id);
+        }
 
         var lastNumber = _context.Accounts.Any()
-            ? await _context.Accounts.AsNoTrackingWithIdentityResolution()
-                .MaxAsync(e => e.Number, cancellationToken)
-            : default;
-        var openedAcc = cust.OpenAccount((lastNumber?.Value ?? AccountNumber.START_VALUE) + 1, request.StartAmount);
+            ? await _context.Accounts.MaxAsync(e => e.AccountNumber, cancellationToken)
+            : AccountNumber.START_VALUE - 1;
+        var account = Account.Create(AccountId.Of(NewId.NextGuid()), AccountNumber.Of(lastNumber + 1), request.StartAmount);
 
-        _context.Accounts.Add(openedAcc);
+        var accDb = MappingService.AccountMapAggregateToDb(account, cust);
+        await _context.Accounts.AddAsync(accDb, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return new OpenAccountResult(openedAcc);
+        await _executor.ExecuteEvents(account, cancellationToken);
+
+        return new OpenAccountResult(account, null);
     }
 }
