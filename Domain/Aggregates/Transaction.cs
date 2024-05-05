@@ -70,7 +70,6 @@ public class Transaction : Aggregate<TransactionId>, IAggregate
                 Result = new TransactionResult(senderRemains, recipientRemains, Status);
                 
                 Result.UpdateStatus(RollingStatus());
-                Thread.Sleep(new Random().Next(1000, 2000));
             }
             catch (Exception e)
             {
@@ -84,7 +83,6 @@ public class Transaction : Aggregate<TransactionId>, IAggregate
         if (Equals(Status, TransactionStatus.Processing))
         {
             Result.UpdateStatus(RollingStatus());
-            Thread.Sleep(new Random().Next(1000, 2000));
         }
 
         return Status;
