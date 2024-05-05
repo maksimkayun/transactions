@@ -29,6 +29,22 @@ public class Customer : Aggregate<CustomerId>, IAggregate
 
         return cust;
     }
+    
+    public static Customer CreateWithAccounts(CustomerId customerId, string name, List<Account> accounts)
+    {
+        var cust = new Customer
+        {
+            Id = customerId,
+            Name = name,
+            IsDeleted = false,
+            _accounts = new List<Account>(accounts)
+        };
+
+        var @event = new CustomerCreatedDomainEvent(cust);
+        cust.AddDomainEvent(@event);
+
+        return cust;
+    }
 
     public Account OpenAccount(long accNumber, decimal amount = 0)
     {
@@ -39,7 +55,7 @@ public class Customer : Aggregate<CustomerId>, IAggregate
         }
         _accounts.Add(newAccount);
         var @event = new ChangeCustomerDomainEvent(this);
-        this.AddDomainEvent(@event);
+        AddDomainEvent(@event);
         
         return newAccount;
     }
@@ -49,7 +65,10 @@ public class Customer : Aggregate<CustomerId>, IAggregate
         var acc = _accounts.FirstOrDefault(e => e.Number == number.ToString());
         if (acc != null)
         {
-            _accounts.Remove(acc);
+            acc.IsDeleted = true;
+            
+            var @event = new ChangeCustomerDomainEvent(this);
+            AddDomainEvent(@event);
         }
 
         return acc;

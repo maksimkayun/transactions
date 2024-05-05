@@ -8,3 +8,10 @@ public class CustomerAlreadyExistException: ConflictException
     {
     }
 }
+
+public class CustomerNotFoundException: BadRequestException
+{
+    public CustomerNotFoundException(int? code = default) : base("Customer not found!", code)
+    {
+    }
+}

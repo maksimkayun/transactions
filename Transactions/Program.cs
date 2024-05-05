@@ -133,6 +133,23 @@ app.MapPost("/customer/{customerId}/openaccount/{startAmount}",
     .Produces(500)
     .WithOpenApi();
 
+app.MapPost("/customer/{customerId}/closeaccount/{accountNumber}",
+        async Task<Results<Ok<AccountDto>, BadRequest<AccountDto>>> (string customerId, long accountNumber,
+            CancellationToken cancellationToken, [FromServices] IMediator mediator) =>
+        {
+            var req = new CloseAccountCommand(customerId, accountNumber);
+            var result = await mediator.Send(req, cancellationToken);
+
+            return result.AccountDto.HasError
+                ? TypedResults.BadRequest(result.AccountDto)
+                : TypedResults.Ok(result.AccountDto);
+        })
+    .WithName("ClosenAccount")
+    .Produces(200)
+    .Produces(400)
+    .Produces(500)
+    .WithOpenApi();
+
 app.MapPost("/account/{accountNumber}/adjustment/{amount}/{mode}",
         async Task<Results<Ok<Account>, BadRequest>> (string accountNumber, decimal amount, string mode,
             CancellationToken cancellationToken, [FromServices] IMediator mediator) =>

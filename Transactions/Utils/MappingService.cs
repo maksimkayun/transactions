@@ -74,6 +74,13 @@ public static class MappingService
         return acc;
     }
     
+    public static Domain.Aggregates.Customer CustomerFromDb(Customer customer)
+    {
+        var acc = Domain.Aggregates.Customer.CreateWithAccounts(CustomerId.Of(customer.Id), customer.Name,
+            customer.Accounts.Select(AccountFromDb).ToList());
+        return acc;
+    }
+    
     public static Domain.Aggregates.Transaction TransactionFromDb(Transaction transaction)
     {
         var senderAcc = AccountFromDb(transaction.SenderAccount);
