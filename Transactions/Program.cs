@@ -110,6 +110,20 @@ app.MapPost("/customer/create", async ([FromBody] CreateCustomerDto customer,
     .Produces(500)
     .WithOpenApi();
 
+app.MapPost("/customer/{customerId}/close", async Task<Results<Ok<Customer>, BadRequest<Customer>>>  (string customerId,
+        CancellationToken cancellationToken, [FromServices] IMediator mediator) =>
+    {
+        var req = new CloseCustomerProfileCommand(customerId);
+        var result = await mediator.Send(req, cancellationToken);
+
+        return TypedResults.Ok(result.Customer);
+    })
+    .WithName("CloseCustomerProfile")
+    .Produces(201)
+    .Produces(400)
+    .Produces(500)
+    .WithOpenApi();
+
 app.MapPost("/customer/{customerId}/openaccount/{startAmount}",
         async Task<Results<Ok<Account>, BadRequest<AccountDto>>> (string customerId, decimal startAmount,
             CancellationToken cancellationToken, [FromServices] IMediator mediator) =>

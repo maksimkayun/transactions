@@ -29,19 +29,36 @@ public class CreateCustomerCommandHandler : IRequestHandler<CreateCustomerComman
 
     public async Task<CreateCustomerResult> Handle(CreateCustomerCommand request, CancellationToken cancellationToken)
     {
-        var cust = await _context.Customers.AsNoTrackingWithIdentityResolution()
+        var cust = await _context.Customers
+            .Include(customer => customer.Accounts)
+            .ThenInclude(account => account.OutgoingTransactions)
+            .Include(customer => customer.Accounts)
+            .ThenInclude(account => account.IncomingTransactions)
+            .AsNoTrackingWithIdentityResolution()
             .FirstOrDefaultAsync(e => e.Name == request.Name, cancellationToken);
-        if (cust is not null)
+        if (cust is not null && !cust.IsDeleted)
         {
             throw new CustomerAlreadyExistException();
         }
 
-        var customer = Customer.Create(CustomerId.Of(NewId.NextGuid()), request.Name);
-        cust = MappingService.CustomerMapAggregateToDb(customer);
-        await _context.Customers.AddAsync(cust, cancellationToken);
-        await _context.SaveChangesAsync(cancellationToken);
+        Customer customer;
+        if (cust.IsDeleted)
+        {
+            cust.IsDeleted = false;
+            _context.Customers.Update(cust);
+            await _context.SaveChangesAsync(cancellationToken);
+            customer = MappingService.CustomerFromDb(cust);
+        }
+        else
+        {
+            customer = Customer.Create(CustomerId.Of(NewId.NextGuid()), request.Name);
+            cust = MappingService.CustomerMapAggregateToDb(customer);
+            await _context.Customers.AddAsync(cust, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
 
-        await _executor.ExecuteEvents(customer, cancellationToken);
+            await _executor.ExecuteEvents(customer, cancellationToken);
+        }
+
 
         return new CreateCustomerResult(customer, null);
     }

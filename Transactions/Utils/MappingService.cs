@@ -71,14 +71,16 @@ public static class MappingService
     {
         var acc = Domain.Aggregates.Account.Create(AccountId.Of(account.Id), AccountNumber.Of(account.AccountNumber),
             account.Amount);
+        acc.IsDeleted = account.IsDeleted;
         return acc;
     }
     
     public static Domain.Aggregates.Customer CustomerFromDb(Customer customer)
     {
-        var acc = Domain.Aggregates.Customer.CreateWithAccounts(CustomerId.Of(customer.Id), customer.Name,
+        var cust = Domain.Aggregates.Customer.CreateWithAccounts(CustomerId.Of(customer.Id), customer.Name,
             customer.Accounts.Select(AccountFromDb).ToList());
-        return acc;
+        cust.IsDeleted = customer.IsDeleted;
+        return cust;
     }
     
     public static Domain.Aggregates.Transaction TransactionFromDb(Transaction transaction)

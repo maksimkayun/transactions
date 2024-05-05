@@ -7,7 +7,7 @@ namespace Domain.Aggregates;
 
 public class Customer : Aggregate<CustomerId>, IAggregate
 {
-    public bool IsDeleted { get; private set; } = default!;
+    public bool IsDeleted { get; set; } = default!;
     public string Name { get; private set; } = default!;
 
     private List<Account> _accounts;

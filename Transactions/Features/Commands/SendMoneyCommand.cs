@@ -28,7 +28,7 @@ public class SendMoneyCommandHandler : IRequestHandler<SendMoneyCommand, SendMon
         var recNum = long.Parse(request.RecipientAccountNumber);
         var accsDb = await
             _context.Accounts.Include(x=>x.Owner)
-                .Where(x => x.AccountNumber == senderNum || x.AccountNumber == recNum).ToListAsync(cancellationToken);
+                .Where(x => (x.AccountNumber == senderNum || x.AccountNumber == recNum) && !x.IsDeleted && !x.Owner.IsDeleted ).ToListAsync(cancellationToken);
 
         if (accsDb.Count != 2)
         {
