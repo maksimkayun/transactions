@@ -17,4 +17,6 @@ public class Account
     public List<Transaction> IncomingTransactions { get; set; }
     
     public decimal Amount { get; set; }
+    
+    public bool IsDeleted { get; set; }
 }

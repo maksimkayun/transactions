@@ -12,4 +12,6 @@ public class Customer
     public string Name { get; set; }
 
     public virtual List<Account> Accounts { get; set; }
+    
+    public bool IsDeleted { get; set; }
 }
