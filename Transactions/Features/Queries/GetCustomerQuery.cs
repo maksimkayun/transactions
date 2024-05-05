@@ -3,12 +3,13 @@ using Domain.Aggregates;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Transactions.DataAccess;
+using Transactions.Utils;
 
 namespace Transactions.Features.Queries;
 
-public record GetCustomerQuery(string? Id, string? Name) : IRequest<CustomerDto>;
+public record GetCustomerQuery(string? Id, string? Name, int? Skip = 0, int? Take = 0) : IRequest<List<CustomerDto>>;
 
-public class GetCustomerQueryHandler : IRequestHandler<GetCustomerQuery, CustomerDto>
+public class GetCustomerQueryHandler : IRequestHandler<GetCustomerQuery, List<CustomerDto>>
 {
     private readonly TransactionsContext _context;
 
@@ -17,37 +18,66 @@ public class GetCustomerQueryHandler : IRequestHandler<GetCustomerQuery, Custome
         _context = context;
     }
 
-    public async Task<CustomerDto> Handle(GetCustomerQuery request, CancellationToken cancellationToken)
+    public async Task<List<CustomerDto>> Handle(GetCustomerQuery request, CancellationToken cancellationToken)
     {
         var custId = request.Id;
         var custName = request.Name;
-        var cust = await _context.Customers.AsNoTrackingWithIdentityResolution()
-            .Include(customer => customer.Accounts)
-            .ThenInclude(account => account.OutgoingTransactions).Include(customer => customer.Accounts)
-            .ThenInclude(account => account.IncomingTransactions)
-            .FirstOrDefaultAsync(e => e.Id == custId || e.Name == custName, cancellationToken: cancellationToken);
+        var searchWithSkipTake = request.Skip != null && request.Skip >= 0 && request.Take != null && request.Take > 0;
+
+        var custs = !string.IsNullOrWhiteSpace(custId) || !string.IsNullOrWhiteSpace(custName)
+            ? await _context.Customers.AsNoTrackingWithIdentityResolution()
+                .Include(customer => customer.Accounts)
+                .ThenInclude(account => account.OutgoingTransactions).Include(customer => customer.Accounts)
+                .ThenInclude(account => account.IncomingTransactions)
+                .Where(e => e.Id == custId || e.Name == custName)
+                .ToListAsync(cancellationToken: cancellationToken)
+            : searchWithSkipTake
+                ? await _context.Customers.AsNoTrackingWithIdentityResolution()
+                    .Include(customer => customer.Accounts)
+                    .ThenInclude(account => account.OutgoingTransactions).Include(customer => customer.Accounts)
+                    .ThenInclude(account => account.IncomingTransactions)
+                    .Skip((int) request.Skip)
+                    .Take((int) request.Take)
+                    .ToListAsync(cancellationToken)
+                : default;
         
-        if (cust == null)
+        if (custs == null)
         {
-            var specErr = request.Id == default ? "Name=" + custName : "Id=" + custId;
-            return ErrorDtoCreator.Create<CustomerDto>($"Customer with {specErr} not found");
+            var specErr = "";
+            var fullMessage = "";
+            if (request.Id != default)
+            {
+                specErr = $"Id={request.Id}";
+            } 
+            else if (request.Name != default)
+            {
+                specErr = $"Name={request.Name}";
+            }
+            else if (searchWithSkipTake)
+            {
+                fullMessage = "Customers not found";
+            }
+            else
+            {
+                fullMessage = "Search by the specified parameters is not possible";
+            }
+            return new List<CustomerDto>() {ErrorDtoCreator.Create<CustomerDto>(string.IsNullOrWhiteSpace(fullMessage) ? $"Customer with {specErr} not found" : fullMessage) };
         }
-        
-        return new CustomerDto
+
+        return custs.Select(c => new CustomerDto
         {
             ErrorInfo = null,
-            Id = cust.Id,
-            Name = cust.Name,
-            Accounts = cust.Accounts?.Select(e => new AccountDto
+            Id = c.Id,
+            Name = c.Name,
+            Accounts = c.Accounts?.Select(acc => new AccountDto
             {
                 ErrorInfo = null,
-                AccountNumber = e.AccountNumber.ToString(),
-                OwnerId = cust.Id,
-                Amount = e.Amount,
-                OutgoingTransactionIds = e.OutgoingTransactions?.Select(tr=> tr.Id.ToString()!).ToList(),
-                IncomingTransactionIds = e.IncomingTransactions?.Select(tr=> tr.Id.ToString()!).ToList(),
-            }).ToList()
-        };
-        throw new NotImplementedException();
+                AccountNumber = acc.AccountNumber.ToString(),
+                OwnerId = c.Id,
+                Amount = acc.Amount,
+                OutgoingTransactionIds = acc.OutgoingTransactions?.Select(t => t.Id)?.ToList() ?? new List<string>(),
+                IncomingTransactionIds = acc.IncomingTransactions?.Select(t => t.Id)?.ToList() ?? new List<string>()
+            })?.ToList() ?? new List<AccountDto>()
+        }).ToList();
     }
 }

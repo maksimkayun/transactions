@@ -58,27 +58,12 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseMiddleware<ExceptionHandleMiddleware>();
 
-// app.MapGet("/customer", async Task<Results<Ok<List<CustomerDto>>, BadRequest<List<CustomerDto>>>> (
-//         [FromQuery] int take,
-//         [FromQuery] int skip,
-//         CancellationToken cancellationToken, [FromServices] ICustomerService customerService) =>
-//     {
-//         var result = await customerService.GetCustomers(take, skip, cancellationToken);
-//         return result == null || result.Any(e=>e.HasError) ? TypedResults.BadRequest(result) : TypedResults.Ok(result);
-//     })
-//     .WithName("GetCustomers")
-//     .Produces<List<CustomerDto>>()
-//     .Produces(200)
-//     .Produces(400)
-//     .Produces(500)
-//     .WithOpenApi();
-//
 app.MapGet("/customer/{id}", async Task<Results<Ok<CustomerDto>, BadRequest<CustomerDto>>> ([FromRoute] string id,
         CancellationToken cancellationToken, [FromServices] IMediator mediator) =>
     {
         var query = new GetCustomerQuery(id, null);
         var result = await mediator.Send(query,cancellationToken);
-        return result.HasError ? TypedResults.BadRequest(result) : TypedResults.Ok(result);
+        return result.Any(e=>e.HasError) ? TypedResults.BadRequest(result.First()) : TypedResults.Ok(result.First());
     })
     .WithName("GetCustomerById")
     .Produces(200)
@@ -86,14 +71,27 @@ app.MapGet("/customer/{id}", async Task<Results<Ok<CustomerDto>, BadRequest<Cust
     .Produces(500)
     .WithOpenApi();
 
-app.MapGet("/customer/name/{name}", async Task<Results<Ok<CustomerDto>, BadRequest<CustomerDto>>> ([FromRoute] string name,
+app.MapGet("/customer/name/{name}", async Task<Results<Ok<List<CustomerDto>>, BadRequest<CustomerDto>>> ([FromRoute] string name,
         CancellationToken cancellationToken, [FromServices] IMediator mediator) =>
     {
         var query = new GetCustomerQuery(null, name);
         var result = await mediator.Send(query,cancellationToken);
-        return result.HasError ? TypedResults.BadRequest(result) : TypedResults.Ok(result);
+        return result.Any(e=>e.HasError) ? TypedResults.BadRequest(result.First()) : TypedResults.Ok(result);
     })
     .WithName("GetCustomerByName")
+    .Produces(200)
+    .Produces(400)
+    .Produces(500)
+    .WithOpenApi();
+
+app.MapGet("/customer/list", async Task<Results<Ok<List<CustomerDto>>, BadRequest<CustomerDto>>> ([FromQuery] int? skip, [FromQuery] int? take,
+        CancellationToken cancellationToken, [FromServices] IMediator mediator) =>
+    {
+        var query = new GetCustomerQuery(null, null, skip, take);
+        var result = await mediator.Send(query,cancellationToken);
+        return result.Any(e=>e.HasError) ? TypedResults.BadRequest(result.First()) : TypedResults.Ok(result);
+    })
+    .WithName("GetCustomerList")
     .Produces(200)
     .Produces(400)
     .Produces(500)
@@ -118,13 +116,13 @@ app.MapPost("/customer/{customerId}/openaccount/{startAmount}",
         {
             var findCustQuery = new GetCustomerQuery(customerId, null);
             var customer = await mediator.Send(findCustQuery, cancellationToken);
-            if (customer.HasError)
+            if (customer.Any(e=>e.HasError))
             {
-                var accError = ErrorDtoCreator.Create<AccountDto>(customer.ErrorInfo!.Message);
+                var accError = ErrorDtoCreator.Create<AccountDto>(customer.First().ErrorInfo!.Message);
                 return TypedResults.BadRequest(accError);
             }
 
-            var openAccountCommand = new OpenAccountCommand(customer, startAmount);
+            var openAccountCommand = new OpenAccountCommand(customer.First(), startAmount);
             var openedAcc = await mediator.Send(openAccountCommand, cancellationToken);
 
             return TypedResults.Ok(openedAcc.Account);
@@ -148,21 +146,7 @@ app.MapPost("/account/{accountNumber}/adjustment/{amount}/{mode}",
     .Produces(400)
     .Produces(500)
     .WithOpenApi();
-//
-// app.MapPost("/account/{accountNumber}/debit/{amount}",
-//         async Task<Results<Ok<AccountDto>, BadRequest<AccountDto>>> (string accountNumber, decimal amount,
-//             CancellationToken cancellationToken, [FromServices] ITransactionService transactionService) =>
-//         {
-//             var result = await transactionService.Debit(accountNumber, amount, cancellationToken);
-//             return result == null || result.HasError ? TypedResults.BadRequest(result) : TypedResults.Ok(result);
-//         })
-//     .WithName("Debit")
-//     .Produces<AccountDto>()
-//     .Produces(200)
-//     .Produces(400)
-//     .Produces(500)
-//     .WithOpenApi();
-//
+
 app.MapPost("/transactions/sendmoney/",
         async Task<Results<Ok<SendMoneyCommandResult>, BadRequest<TransactionDto>>> (
             
@@ -172,7 +156,6 @@ app.MapPost("/transactions/sendmoney/",
             CancellationToken cancellationToken, [FromServices] IMediator mediator) =>
         {
             var tr = await mediator.Send(new SendMoneyCommand(senderAccountNumber, recipientAccountNumber, amount));
-
             return TypedResults.Ok(tr);
         })
     .WithName("SendMoney")
@@ -181,23 +164,5 @@ app.MapPost("/transactions/sendmoney/",
     .Produces(400)
     .Produces(500)
     .WithOpenApi();
-//
-// app.MapGet("/transactions/{transactionId}",
-//         async Task<Results<Ok<TransactionDto>, BadRequest<TransactionDto>>> (
-//             string transactionId,
-//             CancellationToken cancellationToken, [FromServices] ITransactionService transactionService) =>
-//         {
-//             var result = await transactionService.GetTransactionById(transactionId, cancellationToken);
-//             return result == null || result.HasError ? TypedResults.BadRequest(result) : TypedResults.Ok(result);
-//         })
-//     .WithName("GetTransactionById")
-//     .Produces<TransactionDto>()
-//     .Produces(200)
-//     .Produces(400)
-//     .Produces(500)
-//     .WithOpenApi();
-
-
-
 
 app.Run();
