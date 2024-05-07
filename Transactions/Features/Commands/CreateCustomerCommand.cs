@@ -42,7 +42,7 @@ public class CreateCustomerCommandHandler : IRequestHandler<CreateCustomerComman
         }
 
         Customer customer;
-        if (cust.IsDeleted)
+        if (cust?.IsDeleted ?? false)
         {
             cust.IsDeleted = false;
             _context.Customers.Update(cust);
