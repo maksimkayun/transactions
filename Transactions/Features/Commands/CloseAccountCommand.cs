@@ -8,63 +8,47 @@ using Transactions.Utils;
 
 namespace Transactions.Features.Commands;
 
-public record CloseAccountCommand(string CustomerId, long AccountNumber) : IRequest<CloseAccountResult>;
+public record CloseAccountCommand(long AccountNumber, long RecipientAccountNumber)
+    : IRequest<CloseAccountCommandResult>;
 
-public record CloseAccountResult(AccountDto AccountDto);
+public record CloseAccountCommandResult(Account Account, ErrorInfo? ErrorInfo);
 
-public class CloseAccountCommandHandler : IRequestHandler<CloseAccountCommand, CloseAccountResult>
+public class CloseAccountCommandHandler : IRequestHandler<CloseAccountCommand, CloseAccountCommandResult>
 {
     private readonly TransactionsContext _context;
-    private EventsExecutor _executor;
+    private readonly IMediator _mediator;
 
-    public CloseAccountCommandHandler(TransactionsContext context, EventsExecutor executor)
+    public CloseAccountCommandHandler(TransactionsContext context, IMediator mediator)
     {
         _context = context;
-        _executor = executor;
+        _mediator = mediator;
     }
 
-    public async Task<CloseAccountResult> Handle(CloseAccountCommand request, CancellationToken cancellationToken)
+    public async Task<CloseAccountCommandResult> Handle(CloseAccountCommand request,
+        CancellationToken cancellationToken)
     {
-        var cust = await _context.Customers
-            .AsNoTrackingWithIdentityResolution()
-            .Include(c => c.Accounts.Where(a => !a.IsDeleted)).ThenInclude(account => account.OutgoingTransactions)
-            .Include(c => c.Accounts.Where(a => !a.IsDeleted)).ThenInclude(account => account.IncomingTransactions)
-            .FirstOrDefaultAsync(c => c.Id == request.CustomerId && !c.IsDeleted, cancellationToken);
-        if (cust == default)
+        var accountNumber = request.AccountNumber;
+        var account =
+            await _context.Accounts.FirstOrDefaultAsync(a => a.AccountNumber == accountNumber, cancellationToken);
+
+        if (account == null || account.IsDeleted)
         {
-            throw new CustomerNotFoundException();
+            throw new Exception("Account not found or already closed");
         }
 
-        var acc = _context.Accounts.Any()
-            ? await _context.Accounts
-                ?.Where(e => !e.IsDeleted)
-                .Include(e => e.IncomingTransactions)
-                .Include(e => e.OutgoingTransactions)
-                ?.AsNoTrackingWithIdentityResolution()
-                ?.FirstOrDefaultAsync(a => a.AccountNumber == request.AccountNumber, cancellationToken)!
-            : null;
-        if (acc == default)
+        var sendMoneyCommand = new SendMoneyCommand(request.AccountNumber.ToString(),
+            request.RecipientAccountNumber.ToString(), account.Amount);
+        var sendMoneyResult = await _mediator.Send(sendMoneyCommand, cancellationToken);
+
+        if (sendMoneyResult.ErrorInfo != null)
         {
-            throw new AccountDoesNotExistException(request.AccountNumber);
+            throw new Exception($"Error transferring funds: {sendMoneyResult.ErrorInfo.Message}");
         }
 
-        var customer = MappingService.CustomerFromDb(cust);
-        customer.CloseAccount(acc.AccountNumber);
-
-        cust = MappingService.CustomerMapAggregateToDb(customer);
-        await _context.Accounts?.Where(e => e.AccountNumber == request.AccountNumber)
-            ?.ExecuteUpdateAsync(e => e.SetProperty(x => x.IsDeleted, true), cancellationToken)!;
+        account.IsDeleted = true;
+        _context.Accounts.Update(account);
         await _context.SaveChangesAsync(cancellationToken);
-        await _executor.ExecuteEvents(customer, cancellationToken);
 
-        return new CloseAccountResult(new AccountDto
-        {
-            ErrorInfo = null,
-            AccountNumber = acc.AccountNumber.ToString(),
-            OwnerId = cust.Id,
-            Amount = acc.Amount,
-            OutgoingTransactionIds = acc.OutgoingTransactions?.Select(e => e.Id)?.ToList() ?? new List<string>(),
-            IncomingTransactionIds = acc.IncomingTransactions?.Select(e => e.Id)?.ToList() ?? new List<string>()
-        });
+        return new CloseAccountCommandResult(MappingService.AccountFromDb(account), null);
     }
 }

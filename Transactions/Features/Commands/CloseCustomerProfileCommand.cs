@@ -11,8 +11,7 @@ public record CloseCustomerProfileCommand(string CustomerId) : IRequest<CloseCus
 
 public record CloseCustomerProfileResult(Customer Customer);
 
-public class
-    CloseCustomerProfileCommandHandler : IRequestHandler<CloseCustomerProfileCommand, CloseCustomerProfileResult>
+public class CloseCustomerProfileCommandHandler : IRequestHandler<CloseCustomerProfileCommand, CloseCustomerProfileResult>
 {
     private readonly TransactionsContext _context;
     private readonly EventsExecutor _executor;
