@@ -15,8 +15,10 @@ public class Transaction : Aggregate<TransactionId>, IAggregate
     
     public decimal Amount { get; private set; }
     private TransactionResult Result;
+    
+    public DateTime CreatedDate { get; private set; }
 
-    public static Transaction Create(Account senderAccount, Account recipientAccount, decimal amount)
+    public static Transaction Create(Account senderAccount, Account recipientAccount, decimal amount, DateTime? dateTime = null)
     {
         if (senderAccount.Number.Value == recipientAccount.Number.Value)
         {
@@ -30,7 +32,8 @@ public class Transaction : Aggregate<TransactionId>, IAggregate
             Status = TransactionStatus.Created,
             RecipientAccount = recipientAccount,
             SenderAccount = senderAccount,
-            Amount = amount > 0 ? amount : throw new IncorrectTransferAmountException("Сумма для перевода должна быть положительным числом!")
+            Amount = amount > 0 ? amount : throw new IncorrectTransferAmountException("Сумма для перевода должна быть положительным числом!"),
+            CreatedDate = dateTime ?? DateTime.UtcNow
         };
 
         var @event = new TransactionCreatedDomainEvent(tr);
@@ -39,28 +42,8 @@ public class Transaction : Aggregate<TransactionId>, IAggregate
         return tr;
     }
 
-    public void Impoverish()
-    {
-        RecipientAccount = new Account()
-        {
-            Id = RecipientAccount.Id
-        };
-        SenderAccount = new Account()
-        {
-            Id = SenderAccount.Id
-        };
-    }
-
     public async Task<TransactionStatus> MakeTransaction(CancellationToken cancellationToken)
     {
-        // if (cancellationToken.CanBeCanceled)
-        // {
-        //     CancelTransaction(null);
-        //     Result = new TransactionResult(SenderAccountNumber.Decrease(Amount),
-        //         RecipientAccountNumber.Increase(Amount), Status);
-        //     return Status;
-        // }
-        
         if (Equals(Status, TransactionStatus.Created))
         {
             try

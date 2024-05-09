@@ -39,7 +39,8 @@ public static class MappingService
             TransactionStatus = new TransactionStatus()
             {
                 Id = tr.Status.Id
-            }
+            },
+            CreatedDate = tr.CreatedDate
         };
 
     public static Account AccountMapAggregateToDb(Domain.Aggregates.Account acc, Customer owner)
@@ -49,7 +50,9 @@ public static class MappingService
             Id = acc.Id.Value.ToString(),
             AccountNumber = acc.Number.Value,
             Owner = owner,
-            Amount = acc.Amount
+            Amount = acc.Amount,
+            OpenDate = acc.OpenDate,
+            IsDeleted = acc.IsDeleted
         };
 
         if (acc.OutgoingTransactions != null && acc.OutgoingTransactions.Any())
@@ -70,7 +73,7 @@ public static class MappingService
     public static Domain.Aggregates.Account AccountFromDb(Account account)
     {
         var acc = Domain.Aggregates.Account.Create(AccountId.Of(account.Id), AccountNumber.Of(account.AccountNumber),
-            account.Amount);
+            account.Amount, account.OpenDate);
         acc.IsDeleted = account.IsDeleted;
         return acc;
     }
@@ -87,7 +90,7 @@ public static class MappingService
     {
         var senderAcc = AccountFromDb(transaction.SenderAccount);
         var recipAcc = AccountFromDb(transaction.RecipientAccount);
-        var tr = Domain.Aggregates.Transaction.Create(senderAcc, recipAcc, transaction.Amount);
+        var tr = Domain.Aggregates.Transaction.Create(senderAcc, recipAcc, transaction.Amount, dateTime: transaction.CreatedDate);
         tr.Id = TransactionId.Of(transaction.Id);
         return tr;
     }

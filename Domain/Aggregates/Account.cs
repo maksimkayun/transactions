@@ -10,8 +10,10 @@ public class Account : Aggregate<AccountId>, IAggregate
     
     public List<Transaction> IncomingTransactions { get; private set; } = default!;
     public List<Transaction> OutgoingTransactions { get; private set; } = default!;
+    
+    public DateTime OpenDate { get; private set; }
 
-    public static Account Create(AccountId accountId, AccountNumber accountNumber, decimal amount = 0)
+    public static Account Create(AccountId accountId, AccountNumber accountNumber, decimal amount = 0, DateTime? openDate = null)
     {
         var acc = new Account
         {
@@ -20,7 +22,8 @@ public class Account : Aggregate<AccountId>, IAggregate
             Number = accountNumber,
             Id = accountId,
             IncomingTransactions = new List<Transaction>(),
-            OutgoingTransactions = new List<Transaction>()
+            OutgoingTransactions = new List<Transaction>(),
+            OpenDate = openDate ?? DateTime.UtcNow
         };
 
         var @event = new AccountCreatedDomainEvent(acc);

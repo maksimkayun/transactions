@@ -27,22 +27,32 @@ public class GetCustomerQueryHandler : IRequestHandler<GetCustomerQuery, List<Cu
         var custs = !string.IsNullOrWhiteSpace(custId) || !string.IsNullOrWhiteSpace(custName)
             ? await _context.Customers.AsNoTrackingWithIdentityResolution()
                 .Include(customer => customer.Accounts.Where(a=>!a.IsDeleted))
-                .ThenInclude(account => account.OutgoingTransactions)
-                .Include(customer => customer.Accounts.Where(a=>!a.IsDeleted))
-                .ThenInclude(account => account.IncomingTransactions)
                 .Where(e => (e.Id == custId || e.Name == custName) && !e.IsDeleted)
                 .ToListAsync(cancellationToken: cancellationToken)
             : searchWithSkipTake
                 ? await _context.Customers.AsNoTrackingWithIdentityResolution()
                     .Include(customer => customer.Accounts.Where(a=>!a.IsDeleted))
-                    .ThenInclude(account => account.OutgoingTransactions)
-                    .Include(customer => customer.Accounts.Where(a=>!a.IsDeleted))
-                    .ThenInclude(account => account.IncomingTransactions)
                     .Where(e=>!e.IsDeleted)
                     .Skip((int) request.Skip)
                     .Take((int) request.Take)
                     .ToListAsync(cancellationToken)
                 : default;
+
+        if (custs != null)
+        {
+            foreach (var cust in custs)
+            {
+                foreach (var account in cust.Accounts)
+                {
+                    account.OutgoingTransactions = await _context.Transactions
+                        .Where(t => t.SenderAccount.AccountNumber == account.AccountNumber && t.CreatedDate >= account.OpenDate)
+                        .ToListAsync(cancellationToken);
+                    account.IncomingTransactions = await _context.Transactions
+                        .Where(t => t.RecipientAccount.AccountNumber == account.AccountNumber && t.CreatedDate >= account.OpenDate)
+                        .ToListAsync(cancellationToken);
+                }
+            }
+        }
         
         if (custs == null)
         {

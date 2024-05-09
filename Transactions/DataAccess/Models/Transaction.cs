@@ -14,4 +14,6 @@ public class Transaction
     
     public decimal Amount { get; set; }
     public TransactionStatus TransactionStatus { get; set; }
+    
+    public DateTime CreatedDate { get; set; }
 }

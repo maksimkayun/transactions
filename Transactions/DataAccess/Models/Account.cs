@@ -18,5 +18,7 @@ public class Account
     
     public decimal Amount { get; set; }
     
+    public DateTime? OpenDate { get; set; }
+    
     public bool IsDeleted { get; set; }
 }
