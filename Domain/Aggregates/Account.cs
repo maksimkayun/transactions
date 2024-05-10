@@ -1,5 +1,6 @@
 ﻿using Domain.Aggregates.Common;
 using Domain.Aggregates.Events;
+using Domain.Aggregates.Exceptions;
 using IAggregate = Domain.Common.IAggregate;
 
 namespace Domain.Aggregates;
@@ -30,6 +31,21 @@ public class Account : Aggregate<AccountId>, IAggregate
         acc.AddDomainEvent(@event);
 
         return acc;
+    }
+    
+    public Account ReopenAccount(decimal startAmount = 0)
+    {
+        IsDeleted = false;
+        OpenDate = DateTime.UtcNow;
+        if (startAmount >= 0)
+        {
+            Amount = startAmount;
+        }
+        else
+        {
+            throw new IncorrectStartAmountException("The initial amount cannot be less than 0!");
+        }
+        return this;
     }
 
     public Account CloseAccount()

@@ -34,7 +34,7 @@ public class CloseAccountCommandHandler : IRequestHandler<CloseAccountCommand, C
             throw new Exception("Account not found or already closed");
         }
 
-        if (account.Amount > 0)
+        if (account.Amount != 0)
         {
             if (request.RefundAccountNumber == 0)
             {

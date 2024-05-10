@@ -8,3 +8,10 @@ public class IncorrectTransferAmountException : BadRequestException
     {
     }
 }
+
+public class IncorrectStartAmountException : BadRequestException
+{
+    public IncorrectStartAmountException(string message, int? code = null) : base(message, code)
+    {
+    }
+}

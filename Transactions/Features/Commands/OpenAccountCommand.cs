@@ -40,11 +40,13 @@ public class OpenAccountCommandHandler : IRequestHandler<OpenAccountCommand, Ope
         if (closedAccount != null)
         {
             // Если есть закрытый счет, переоткрываем его
-            closedAccount.IsDeleted = false;
-            closedAccount.Amount = request.StartAmount;
-            closedAccount.OpenDate = DateTime.UtcNow;
-            _context.Accounts.Update(closedAccount);
             account = MappingService.AccountFromDb(closedAccount);
+            account.ReopenAccount(request.StartAmount);
+            
+            closedAccount.IsDeleted = account.IsDeleted;
+            closedAccount.Amount = account.Amount;
+            closedAccount.OpenDate = account.OpenDate;
+            _context.Accounts.Update(closedAccount);
         }
         else
         {

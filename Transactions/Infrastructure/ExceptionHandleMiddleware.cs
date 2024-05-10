@@ -1,4 +1,5 @@
 ﻿using Api.Dto;
+using Domain.Common;
 using Newtonsoft.Json.Linq;
 
 namespace Transactions.Infrastructure;
@@ -34,7 +35,7 @@ public class ExceptionHandleMiddleware(RequestDelegate next)
         var jsonResult = JObject.FromObject(result);
         jsonResult.Add("stackTrace", ex.StackTrace);
         httpContext.Response.ContentType = "application/json";
-        httpContext.Response.StatusCode = 500;
+        httpContext.Response.StatusCode = ex is BadRequestException ? 400 : 500;
 
         return httpContext.Response.WriteAsync(jsonResult.ToString());
     }
