@@ -58,16 +58,17 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseMiddleware<ExceptionHandleMiddleware>();
 
-app.MapGet("/customer/{id}", async Task<Results<Ok<CustomerDto>, BadRequest<CustomerDto>>> ([FromRoute] string id,
+app.MapGet("/customer/{id}", async Task<Results<Ok<CustomerDto>, BadRequest<CustomerDto>, NotFound>> ([FromRoute] string id,
         CancellationToken cancellationToken, [FromServices] IMediator mediator) =>
     {
         var query = new GetCustomerQuery(id, null);
         var result = await mediator.Send(query,cancellationToken);
-        return result.Any(e=>e.HasError) ? TypedResults.BadRequest(result.First()) : TypedResults.Ok(result.First());
+        return result.Any(e=>e.HasError) ? TypedResults.BadRequest(result.First()) : result.Count > 0 ? TypedResults.Ok(result.First()) : TypedResults.NotFound();
     })
     .WithName("GetCustomerById")
     .Produces(200)
     .Produces(400)
+    .Produces(404)
     .Produces(500)
     .WithOpenApi();
 
