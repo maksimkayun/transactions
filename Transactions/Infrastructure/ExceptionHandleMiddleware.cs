@@ -1,10 +1,12 @@
 ﻿using Api.Dto;
 using Domain.Common;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
+using Transactions.Settings;
 
 namespace Transactions.Infrastructure;
 
-public class ExceptionHandleMiddleware(RequestDelegate next)
+public class ExceptionHandleMiddleware(RequestDelegate next, IOptions<AppSettings> options)
 {
     public async Task Invoke(HttpContext httpContext, IWebHostEnvironment environment)
     {
@@ -33,9 +35,10 @@ public class ExceptionHandleMiddleware(RequestDelegate next)
         };
 
         var jsonResult = JObject.FromObject(result);
-        jsonResult.Add("stackTrace", ex.StackTrace);
+        if(options.Value.Debug)
+            jsonResult.Add("stackTrace", ex.StackTrace);
         httpContext.Response.ContentType = "application/json";
-        httpContext.Response.StatusCode = ex is BadRequestException ? 400 : 500;
+        httpContext.Response.StatusCode = ex is BadRequestException or ConflictException ? 400 : 500;
 
         return httpContext.Response.WriteAsync(jsonResult.ToString());
     }

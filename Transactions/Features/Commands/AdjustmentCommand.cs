@@ -35,7 +35,7 @@ public class AdjustmentCommandHandler : IRequestHandler<AdjustmentCommand, Adjus
         }
 
         var acc = await _context.Accounts.AsNoTrackingWithIdentityResolution()
-            .FirstOrDefaultAsync(e => e.AccountNumber == accNum, cancellationToken);
+            .FirstOrDefaultAsync(e => e.AccountNumber == accNum && !e.IsDeleted, cancellationToken);
 
         if (acc != default)
         {

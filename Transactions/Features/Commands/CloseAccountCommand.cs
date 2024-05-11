@@ -31,7 +31,7 @@ public class CloseAccountCommandHandler : IRequestHandler<CloseAccountCommand, C
 
         if (account == null || account.IsDeleted)
         {
-            throw new Exception("Account not found or already closed");
+            throw new AccountDoesNotExistException(request.AccountNumber);
         }
 
         if (account.Amount != 0)

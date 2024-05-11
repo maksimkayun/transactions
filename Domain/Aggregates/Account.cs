@@ -82,7 +82,7 @@ public class Account : Aggregate<AccountId>, IAggregate
         }
         else
         {
-            throw new Exception(value <=  0 ? "Сумма для списания должна быть больше 0!" : "Недостаточно средств для списания!");
+            throw new InvalidDecreaseException(value <=  0 ? "Сумма для списания должна быть больше 0!" : "Недостаточно средств для списания!");
         }
 
         return Amount;

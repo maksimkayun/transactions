@@ -14,3 +14,10 @@ public class InvalidTransactionIdException : BadRequestException
     {
     }
 }
+
+public class InvalidTransactionException : BadRequestException 
+{
+    public InvalidTransactionException(string message, int? code = null) : base(message, code)
+    {
+    }
+}

@@ -1,5 +1,6 @@
 ﻿using Api.Dto;
 using Domain.Aggregates;
+using Domain.Aggregates.Exceptions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Transactions.DataAccess;
@@ -32,7 +33,7 @@ public class SendMoneyCommandHandler : IRequestHandler<SendMoneyCommand, SendMon
 
         if (accsDb.Count != 2)
         {
-            throw new Exception($"accsDb.Count != 2. Fact: {accsDb.Count}");
+            throw new InvalidTransactionException($"The transaction is not possible");
         }
 
         var sender = MappingService.AccountFromDb(accsDb.First(a => a.AccountNumber == senderNum));
