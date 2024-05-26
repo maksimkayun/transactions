@@ -19,7 +19,7 @@ public class Account : Aggregate<AccountId>, IAggregate
         var acc = new Account
         {
             IsDeleted = false,
-            Amount = amount > 0 ? amount : throw new IncorrectStartAmountException("The initial amount cannot be less than 0!"),
+            Amount = amount >= 0 ? amount : throw new IncorrectStartAmountException("The initial amount cannot be less than 0!"),
             Number = accountNumber,
             Id = accountId,
             IncomingTransactions = new List<Transaction>(),
