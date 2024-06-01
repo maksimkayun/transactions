@@ -1,4 +1,4 @@
-﻿using Transactions.Settings;
+﻿using Common.Settings;
 
 namespace Transactions.StartupExtensions;
 
@@ -8,6 +8,7 @@ public static class SettingsExtension
     {
         var section = builder.Configuration.Get<AppSettings>();
         builder.Services.AddSingleton(section);
+        builder.Services.AddOptions<AppSettings>();
 
         return section;
     }

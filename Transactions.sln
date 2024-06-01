@@ -6,6 +6,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Domain", "Domain\Domain.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Api", "Api\Api.csproj", "{C54AAC93-DCCB-47D4-922C-F90FB342354C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Transactions.EsbAdapter", "Transactions.EsbAdapter\Transactions.EsbAdapter.csproj", "{EC53F12A-856B-47DD-9E40-E18B7ABCE2C0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{534F2FB3-6CCD-4D85-807C-2EBCF2E7A6A2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +28,13 @@ Global
 		{C54AAC93-DCCB-47D4-922C-F90FB342354C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C54AAC93-DCCB-47D4-922C-F90FB342354C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C54AAC93-DCCB-47D4-922C-F90FB342354C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EC53F12A-856B-47DD-9E40-E18B7ABCE2C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC53F12A-856B-47DD-9E40-E18B7ABCE2C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC53F12A-856B-47DD-9E40-E18B7ABCE2C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC53F12A-856B-47DD-9E40-E18B7ABCE2C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{534F2FB3-6CCD-4D85-807C-2EBCF2E7A6A2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{534F2FB3-6CCD-4D85-807C-2EBCF2E7A6A2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{534F2FB3-6CCD-4D85-807C-2EBCF2E7A6A2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{534F2FB3-6CCD-4D85-807C-2EBCF2E7A6A2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

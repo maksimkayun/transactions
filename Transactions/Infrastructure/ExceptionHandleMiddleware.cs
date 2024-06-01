@@ -1,8 +1,8 @@
 ﻿using Api.Dto;
+using Common.Settings;
 using Domain.Common;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
-using Transactions.Settings;
 
 namespace Transactions.Infrastructure;
 

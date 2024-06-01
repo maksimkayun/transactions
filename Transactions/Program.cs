@@ -7,8 +7,8 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
-using Transactions;
 using Transactions.DataAccess;
+using Transactions.EsbAdapter.EventBus;
 using Transactions.Features.Commands;
 using Transactions.Features.Queries;
 using Transactions.Infrastructure;
@@ -41,10 +41,11 @@ builder.Services.AddQuartz(q =>
     q.AddTrigger(opts => opts
         .ForJob(TransactionProcessor.Key)
         .WithIdentity("TransactionProcessor-startTrigger")
-        .StartNow()
+        .StartAt(DateTimeOffset.Now.AddSeconds(5))
     );
 });
 builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
+builder.Services.AddSingleton<KafkaProducerService>();
 
 var app = builder.Build();
 
