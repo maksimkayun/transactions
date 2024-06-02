@@ -41,7 +41,7 @@ builder.Services.AddQuartz(q =>
     q.AddTrigger(opts => opts
         .ForJob(TransactionProcessor.Key)
         .WithIdentity("TransactionProcessor-startTrigger")
-        .StartAt(DateTimeOffset.Now.AddSeconds(5))
+        .StartNow()
     );
 });
 builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
@@ -192,6 +192,20 @@ app.MapPost("/transactions/sendmoney/",
             return TypedResults.Ok(tr);
         })
     .WithName("SendMoney")
+    .Produces<TransactionDto>()
+    .Produces(200)
+    .Produces(400)
+    .Produces(500)
+    .WithOpenApi();
+
+app.MapGet("/transactions/getstatus/{id}",async Task<Results<Ok<TransactionDto>, BadRequest<TransactionDto>>> (
+        [FromRoute] string id,
+        CancellationToken cancellationToken, [FromServices] IMediator mediator) =>
+    {
+        var tr = await mediator.Send(new GetTransactionStatusQuery(id), cancellationToken);
+        return tr.HasError ? TypedResults.BadRequest(tr) : TypedResults.Ok(tr);
+    })
+    .WithName("GetTransactionStatus")
     .Produces<TransactionDto>()
     .Produces(200)
     .Produces(400)
