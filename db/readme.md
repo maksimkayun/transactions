@@ -6,7 +6,7 @@ clickhouse-client --query "CREATE MATERIALIZED VIEW consumer TO daily AS SELECT 
 
 ===============================
 
-clickhouse-client --query "CREATE TABLE transactions_cancelled_queue (Id UUID, timestamp UInt64) ENGINE = Kafka('broker:19092', 'TransactionsCancelled', 'consumer-group-2', 'JSONEachRow');"
+clickhouse-client --query "CREATE TABLE transactions_cancelled_queue (Id UUID, timestamp UInt64) ENGINE = Kafka('broker:9092', 'TransactionsCancelled', 'consumer-group-2', 'JSONEachRow');"
 
 clickhouse-client --query "CREATE TABLE daily_cancelled ( day Date, total UInt64 ) ENGINE = SummingMergeTree() ORDER BY (day);"
 
@@ -15,7 +15,7 @@ clickhouse-client --query "CREATE MATERIALIZED VIEW consumer_cancelled TO daily_
 
 ===============================
 
-clickhouse-client --query "CREATE TABLE transactions_completed_queue (Id UUID, timestamp UInt64) ENGINE = Kafka('broker:19092', 'TransactionsCompleted', 'consumer-group-2', 'JSONEachRow');"
+clickhouse-client --query "CREATE TABLE transactions_completed_queue (Id UUID, timestamp UInt64) ENGINE = Kafka('broker:9092', 'TransactionsCompleted', 'consumer-group-2', 'JSONEachRow');"
 
 clickhouse-client --query "CREATE TABLE daily_completed ( day Date, total UInt64 ) ENGINE = SummingMergeTree() ORDER BY (day);"
 

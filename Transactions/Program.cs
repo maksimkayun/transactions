@@ -24,10 +24,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 var appSettings = builder.UseAppSettings();
 
-builder.Services.AddDbContext<TransactionsContext>(opt =>
-{
-    opt.UseNpgsql(appSettings.ConnectionString);
-}, ServiceLifetime.Transient);
+builder.Services.AddDbContext<TransactionsContext>(opt => { opt.UseNpgsql(appSettings.ConnectionString); },
+    ServiceLifetime.Transient);
 
 builder.Services.AddMediatR(e => e.RegisterServicesFromAssemblies(Assembly.GetEntryAssembly()));
 builder.Services.AddTransient<EventsExecutor>();
@@ -59,12 +57,14 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseMiddleware<ExceptionHandleMiddleware>();
 
-app.MapGet("/customer/{id}", async Task<Results<Ok<CustomerDto>, BadRequest<CustomerDto>, NotFound>> ([FromRoute] string id,
+app.MapGet("/customer/{id}", async Task<Results<Ok<CustomerDto>, BadRequest<CustomerDto>, NotFound>> (
+        [FromRoute] string id,
         CancellationToken cancellationToken, [FromServices] IMediator mediator) =>
     {
         var query = new GetCustomerQuery(id, null);
-        var result = await mediator.Send(query,cancellationToken);
-        return result.Any(e=>e.HasError) ? TypedResults.BadRequest(result.First()) : result.Count > 0 ? TypedResults.Ok(result.First()) : TypedResults.NotFound();
+        var result = await mediator.Send(query, cancellationToken);
+        return result.Any(e => e.HasError) ? TypedResults.BadRequest(result.First()) :
+            result.Count > 0 ? TypedResults.Ok(result.First()) : TypedResults.NotFound();
     })
     .WithName("GetCustomerById")
     .Produces(200)
@@ -73,12 +73,13 @@ app.MapGet("/customer/{id}", async Task<Results<Ok<CustomerDto>, BadRequest<Cust
     .Produces(500)
     .WithOpenApi();
 
-app.MapGet("/customer/name/{name}", async Task<Results<Ok<List<CustomerDto>>, BadRequest<CustomerDto>>> ([FromRoute] string name,
+app.MapGet("/customer/name/{name}", async Task<Results<Ok<List<CustomerDto>>, BadRequest<CustomerDto>>> (
+        [FromRoute] string name,
         CancellationToken cancellationToken, [FromServices] IMediator mediator) =>
     {
         var query = new GetCustomerQuery(null, name);
-        var result = await mediator.Send(query,cancellationToken);
-        return result.Any(e=>e.HasError) ? TypedResults.BadRequest(result.First()) : TypedResults.Ok(result);
+        var result = await mediator.Send(query, cancellationToken);
+        return result.Any(e => e.HasError) ? TypedResults.BadRequest(result.First()) : TypedResults.Ok(result);
     })
     .WithName("GetCustomerByName")
     .Produces(200)
@@ -86,12 +87,13 @@ app.MapGet("/customer/name/{name}", async Task<Results<Ok<List<CustomerDto>>, Ba
     .Produces(500)
     .WithOpenApi();
 
-app.MapGet("/customer/list", async Task<Results<Ok<List<CustomerDto>>, BadRequest<CustomerDto>>> ([FromQuery] int? skip, [FromQuery] int? take,
+app.MapGet("/customer/list", async Task<Results<Ok<List<CustomerDto>>, BadRequest<CustomerDto>>> ([FromQuery] int? skip,
+        [FromQuery] int? take,
         CancellationToken cancellationToken, [FromServices] IMediator mediator) =>
     {
         var query = new GetCustomerQuery(null, null, skip, take);
-        var result = await mediator.Send(query,cancellationToken);
-        return result.Any(e=>e.HasError) ? TypedResults.BadRequest(result.First()) : TypedResults.Ok(result);
+        var result = await mediator.Send(query, cancellationToken);
+        return result.Any(e => e.HasError) ? TypedResults.BadRequest(result.First()) : TypedResults.Ok(result);
     })
     .WithName("GetCustomerList")
     .Produces(200)
@@ -112,7 +114,7 @@ app.MapPost("/customer/create", async ([FromBody] CreateCustomerDto customer,
     .Produces(500)
     .WithOpenApi();
 
-app.MapPost("/customer/{customerId}/close", async Task<Results<Ok<Customer>, BadRequest<Customer>>>  (string customerId,
+app.MapPost("/customer/{customerId}/close", async Task<Results<Ok<Customer>, BadRequest<Customer>>> (string customerId,
         CancellationToken cancellationToken, [FromServices] IMediator mediator) =>
     {
         var req = new CloseCustomerProfileCommand(customerId);
@@ -132,7 +134,7 @@ app.MapPost("/customer/{customerId}/openaccount/{startAmount}",
         {
             var findCustQuery = new GetCustomerQuery(customerId, null);
             var customer = await mediator.Send(findCustQuery, cancellationToken);
-            if (customer.Any(e=>e.HasError))
+            if (customer.Any(e => e.HasError))
             {
                 var accError = ErrorDtoCreator.Create<AccountDto>(customer.First().ErrorInfo!.Message);
                 return TypedResults.BadRequest(accError);
@@ -150,7 +152,8 @@ app.MapPost("/customer/{customerId}/openaccount/{startAmount}",
     .WithOpenApi();
 
 app.MapPost("/account/closeaccount/{accountNumber}",
-        async Task<Results<Ok<Account>, BadRequest<ErrorInfo>>> (long accountNumber, [FromQuery] long refundAccountNumber,
+        async Task<Results<Ok<Account>, BadRequest<ErrorInfo>>> (long accountNumber,
+            [FromQuery] long refundAccountNumber,
             CancellationToken cancellationToken, [FromServices] IMediator mediator) =>
         {
             var req = new CloseAccountCommand(accountNumber, refundAccountNumber);
@@ -182,7 +185,6 @@ app.MapPost("/account/{accountNumber}/adjustment/{amount}/{mode}",
 
 app.MapPost("/transactions/sendmoney/",
         async Task<Results<Ok<SendMoneyCommandResult>, BadRequest<TransactionDto>>> (
-            
             [FromQuery] string senderAccountNumber,
             [FromQuery] string recipientAccountNumber,
             [FromQuery] decimal amount,
@@ -198,7 +200,7 @@ app.MapPost("/transactions/sendmoney/",
     .Produces(500)
     .WithOpenApi();
 
-app.MapGet("/transactions/getstatus/{id}",async Task<Results<Ok<TransactionDto>, BadRequest<TransactionDto>>> (
+app.MapGet("/transactions/getstatus/{id}", async Task<Results<Ok<TransactionDto>, BadRequest<TransactionDto>>> (
         [FromRoute] string id,
         CancellationToken cancellationToken, [FromServices] IMediator mediator) =>
     {
