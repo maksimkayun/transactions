@@ -29,11 +29,8 @@ public class TransactionsContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        modelBuilder.Entity<Account>().HasKey(e => new
-        {
-            e.Id,
-            e.AccountNumber
-        });
+        modelBuilder.Entity<Account>().HasKey(e => e.Id);
+        modelBuilder.Entity<Account>().HasIndex(e => e.AccountNumber);
         modelBuilder.Entity<Customer>().HasKey(e => e.Id);
         modelBuilder.Entity<Transaction>().HasKey(e => e.Id);
         modelBuilder.Entity<TransactionStatus>().HasKey(e => e.Id);

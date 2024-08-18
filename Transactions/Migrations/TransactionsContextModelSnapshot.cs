@@ -44,7 +44,9 @@ namespace Transactions.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.HasKey("Id", "AccountNumber");
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountNumber");
 
                     b.HasIndex("OwnerId");
 
@@ -81,15 +83,9 @@ namespace Transactions.Migrations
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long>("RecipientAccountAccountNumber")
-                        .HasColumnType("bigint");
-
                     b.Property<string>("RecipientAccountId")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<long>("SenderAccountAccountNumber")
-                        .HasColumnType("bigint");
 
                     b.Property<string>("SenderAccountId")
                         .IsRequired()
@@ -100,11 +96,11 @@ namespace Transactions.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("RecipientAccountId");
+
+                    b.HasIndex("SenderAccountId");
+
                     b.HasIndex("TransactionStatusId");
-
-                    b.HasIndex("RecipientAccountId", "RecipientAccountAccountNumber");
-
-                    b.HasIndex("SenderAccountId", "SenderAccountAccountNumber");
 
                     b.ToTable("Transactions");
                 });
@@ -143,22 +139,22 @@ namespace Transactions.Migrations
 
             modelBuilder.Entity("Transactions.DataAccess.Models.Transaction", b =>
                 {
-                    b.HasOne("Transactions.DataAccess.Models.TransactionStatus", "TransactionStatus")
-                        .WithMany()
-                        .HasForeignKey("TransactionStatusId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("Transactions.DataAccess.Models.Account", "RecipientAccount")
                         .WithMany("IncomingTransactions")
-                        .HasForeignKey("RecipientAccountId", "RecipientAccountAccountNumber")
+                        .HasForeignKey("RecipientAccountId")
                         .OnDelete(DeleteBehavior.SetNull)
                         .IsRequired();
 
                     b.HasOne("Transactions.DataAccess.Models.Account", "SenderAccount")
                         .WithMany("OutgoingTransactions")
-                        .HasForeignKey("SenderAccountId", "SenderAccountAccountNumber")
+                        .HasForeignKey("SenderAccountId")
                         .OnDelete(DeleteBehavior.SetNull)
+                        .IsRequired();
+
+                    b.HasOne("Transactions.DataAccess.Models.TransactionStatus", "TransactionStatus")
+                        .WithMany()
+                        .HasForeignKey("TransactionStatusId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("RecipientAccount");
