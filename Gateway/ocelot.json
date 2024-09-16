@@ -1,0 +1,21 @@
+﻿{
+  "Routes": [
+    {
+      "UseServiceDiscovery": true,
+      "ServiceName": "transactions",
+      "DownstreamPathTemplate": "/transactions",
+      "DownstreamScheme": "https",      
+      "UpstreamPathTemplate": "/transactions/",
+      "UpstreamHttpMethod": [ "Get" ]
+    }
+  ],
+   "GlobalConfiguration": {
+    "BaseUrl": "https://localhost:7057",
+     "ServiceDiscoveryProvider": {
+       "Host": "localhost",
+       "Port": 8500,
+       "Type": "PollConsul",
+       "PollingInterval": 100
+     }
+   }
+}
