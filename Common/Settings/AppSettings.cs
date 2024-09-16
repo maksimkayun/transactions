@@ -8,4 +8,6 @@ public class AppSettings
     public bool Debug { get; set; } = false;
 
     public KafkaSettings KafkaSettings { get; set; } = null!;
+    
+    public bool UseSelfTransactionProcessor { get; set; }
 }
