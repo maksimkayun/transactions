@@ -1,6 +1,7 @@
 using System.Reflection;
 using Api.Dto;
 using Api.Dto.CreateDto;
+using Consul;
 using Domain.Aggregates;
 using MediatR;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -24,6 +25,11 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 var appSettings = builder.UseAppSettings();
 
+builder.Services.AddSingleton<IConsulClient, ConsulClient>(p => new ConsulClient(consulConfig =>
+{
+    consulConfig.Address = new Uri("http://localhost:8500");
+}));
+
 builder.Services.AddDbContext<TransactionsContext>(opt => { opt.UseNpgsql(appSettings.ConnectionString); },
     ServiceLifetime.Transient);
 
@@ -46,6 +52,8 @@ builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 builder.Services.AddSingleton<KafkaProducerService>();
 
 var app = builder.Build();
+
+app.UseConsul();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

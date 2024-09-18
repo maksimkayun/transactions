@@ -10,7 +10,7 @@
     }
   ],
    "GlobalConfiguration": {
-    "BaseUrl": "https://localhost:7057",
+    "BaseUrl": "https://localhost:7169",
      "ServiceDiscoveryProvider": {
        "Host": "localhost",
        "Port": 8500,

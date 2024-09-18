@@ -9,6 +9,7 @@ public static class SettingsExtension
         var section = builder.Configuration.Get<AppSettings>();
         builder.Services.AddSingleton(section);
         builder.Services.AddOptions<AppSettings>();
+        builder.Services.Configure<ServiceDiscoveryConfig>(builder.Configuration.GetSection("ServiceDiscoveryConfig"));
 
         return section;
     }
