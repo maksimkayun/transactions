@@ -51,10 +51,9 @@ app.MapGet("/aggregation/customer/{name}", async (string name) =>
                            return Array.Empty<string>();
                        }) ??
                        Array.Empty<string>();
-            })
-            .ToList();
+            }).Distinct();
 
-        List<TransactionDto> dtos = new List<TransactionDto>(trIds?.Count ?? 0);
+        List<TransactionDto> dtos = new List<TransactionDto>(trIds?.Count() ?? 0);
         if (trIds != null)
             foreach (var tr in trIds)
             {
