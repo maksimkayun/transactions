@@ -3,10 +3,18 @@
     {
       "UseServiceDiscovery": true,
       "ServiceName": "transactions",
-      "DownstreamPathTemplate": "/transactions",
-      "DownstreamScheme": "https",      
-      "UpstreamPathTemplate": "/transactions/",
-      "UpstreamHttpMethod": [ "Get" ]
+      "DownstreamPathTemplate": "/{url}",      
+      "DownstreamScheme": "https",
+      "UpstreamPathTemplate": "/api/tr/{url}",
+      "UpstreamHttpMethod": [ "POST", "PUT", "GET" ]
+    },
+    {
+      "UseServiceDiscovery": true,
+      "ServiceName": "aggregator",
+      "DownstreamPathTemplate": "/{url}",
+      "DownstreamScheme": "https",
+      "UpstreamPathTemplate": "/api/{url}",
+      "UpstreamHttpMethod": [ "POST", "PUT", "GET" ]
     }
   ],
    "GlobalConfiguration": {
