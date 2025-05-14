@@ -9,10 +9,6 @@
   <img src="https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white" alt="Kubernetes" />
 </div>
 
-<div align="center">
-  <img src="https://mermaid.ink/img/pako:eNptkU1PwzAMhv9KlBMgsTZ0Y1O3w3YAiQNCQuLiJaaxlsRR4gxWVf3vJN1HBfXk2I_fV7bjHhtjoYYzrh0jRrKG3j08PjWkCbQP5NZNYOk9dUbE3ZyVQm2VtmTnrmbpodWKhKRu8YYpvkI4Jqnhd9MZFIZbcI71QLLDlUvWWHXO0m-oGM4Sh1cUJ-gvzrSGwzDhm_mFZx3_DMfY9h25DQrhbdW_5VOE4_gMuT6iH1IetTrpBQdKKzZ-5YYlSB-XkF19QttjCHWxudkUm12x3eX7fbErYrOaUHa6a41U82RXWYfAP6a_TdOK3e2ueOXZbAq8zSdDh4zQEkKGZEzqQrK6c9w_pjdG0BPlrh4x5zRggWFcCz3aZtBiHdG1Sc09gy8YLv5jLj_1C6YdvBI?" alt="Transactions Architecture" width="700px" />
-</div>
-
 ## 📋 Описание
 
 **Transactions** — это современное микросервисное решение для обработки финансовых транзакций, разработанное с применением принципов Event-Driven архитектуры. Проект демонстрирует построение масштабируемой и отказоустойчивой системы на базе .NET Core и контейнерных технологий с использованием Apache Kafka в качестве платформы обмена сообщениями.
